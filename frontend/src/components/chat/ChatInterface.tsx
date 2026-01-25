@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 import type { ChatMessage, PollOption } from "@/types/project";
 
 interface ChatInterfaceProps {
@@ -70,27 +71,35 @@ const ChatInterface = ({ onPlanComplete }: ChatInterfaceProps) => {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response - ready for backend integration
-    // TODO: Replace with actual API call to AI service
-    setTimeout(() => {
-      const response = mockResponses[responseIndex % mockResponses.length];
+    try {
+      const response = await api.post('/chat/message', {
+        content: userMessage.content
+      });
+
+      const data = response.data;
+
       const aiMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: response.content,
-        timestamp: new Date(),
-        metadata: response.poll
-          ? {
-              type: "poll",
-              pollOptions: response.poll.options.map((o) => ({ ...o, selected: false })),
-            }
-          : undefined,
+        id: data.id,
+        role: "assistant", // data.role should be 'assistant'
+        content: data.content,
+        timestamp: new Date(data.timestamp),
+        metadata: data.metadata
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-      setResponseIndex((prev) => prev + 1);
+
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      const errorMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Sorry, I encountered an error connecting to the server. Please try again.",
+        timestamp: new Date()
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handlePollSelect = (messageId: string, optionId: string) => {
@@ -156,11 +165,10 @@ const ChatInterface = ({ onPlanComplete }: ChatInterfaceProps) => {
 
             <div className={`max-w-[80%] ${message.role === "user" ? "order-first" : ""}`}>
               <div
-                className={`p-4 rounded-2xl ${
-                  message.role === "user"
-                    ? "chat-bubble-user"
-                    : "chat-bubble-ai"
-                }`}
+                className={`p-4 rounded-2xl ${message.role === "user"
+                  ? "chat-bubble-user"
+                  : "chat-bubble-ai"
+                  }`}
               >
                 <div className="text-sm whitespace-pre-wrap">{message.content}</div>
               </div>
@@ -173,11 +181,10 @@ const ChatInterface = ({ onPlanComplete }: ChatInterfaceProps) => {
                       key={option.id}
                       onClick={() => handlePollSelect(message.id, option.id)}
                       disabled={!!message.metadata?.selectedOption}
-                      className={`w-full p-3 rounded-lg border text-left transition-all ${
-                        option.selected
-                          ? "border-primary bg-primary/20 text-primary"
-                          : "border-border bg-card hover:border-primary/50 hover:bg-card/80"
-                      } ${message.metadata?.selectedOption ? "cursor-default" : "cursor-pointer"}`}
+                      className={`w-full p-3 rounded-lg border text-left transition-all ${option.selected
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-border bg-card hover:border-primary/50 hover:bg-card/80"
+                        } ${message.metadata?.selectedOption ? "cursor-default" : "cursor-pointer"}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>

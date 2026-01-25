@@ -1,5 +1,5 @@
-from ..fault_detection.analyzer import CircuitAnalyzer
-from ..circuit_parser.models import CircuitData
+from fault_detection.analyzer import CircuitAnalyzer
+from circuit_parser.models import CircuitData
 
 class ReasoningEngine:
     def __init__(self, circuit_data: CircuitData):

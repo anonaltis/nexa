@@ -3,13 +3,13 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useProjectContext } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Plus, 
-  Folder, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle2, 
-  Settings, 
+import {
+  Plus,
+  Folder,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Settings,
   MoreHorizontal,
   Cpu,
   Bot,
@@ -87,11 +87,56 @@ const Dashboard = () => {
     <Layout>
       <div className="py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Projects</h1>
-            <p className="text-muted-foreground">Manage your electronics projects</p>
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Dashboard</h1>
+              <p className="text-muted-foreground">Welcome back, {user?.name}</p>
+            </div>
           </div>
+
+          {/* Quick Tools */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link to="/chat" className="group">
+              <div className="blueprint-card p-6 flex items-center gap-4 hover:border-primary/50 transition-colors h-full">
+                <div className="p-3 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                  <Bot className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">AI Assistant</h3>
+                  <p className="text-sm text-muted-foreground">Start a new chat</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/pcb" className="group">
+              <div className="blueprint-card p-6 flex items-center gap-4 hover:border-purple-500/50 transition-colors h-full">
+                <div className="p-3 rounded-full bg-purple-500/10 text-purple-500 group-hover:scale-110 transition-transform">
+                  <Cpu className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">PCB Viewer</h3>
+                  <p className="text-sm text-muted-foreground">View layouts</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/code" className="group">
+              <div className="blueprint-card p-6 flex items-center gap-4 hover:border-yellow-500/50 transition-colors h-full">
+                <div className="p-3 rounded-full bg-yellow-500/10 text-yellow-500 group-hover:scale-110 transition-transform">
+                  <Code className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Code Editor</h3>
+                  <p className="text-sm text-muted-foreground">Write firmware</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Your Projects</h2>
           <Button asChild className="bg-primary hover:bg-primary/90 gap-2">
             <Link to="/chat">
               <Plus className="w-4 h-4" />
@@ -148,7 +193,7 @@ const Dashboard = () => {
             {projects.map((project) => {
               const status = statusConfig[project.status];
               const StatusIcon = status.icon;
-              
+
               return (
                 <div key={project.id} className="blueprint-card p-5 hover:border-primary/50 transition-all group">
                   <div className="flex items-start justify-between mb-3">
@@ -187,7 +232,7 @@ const Dashboard = () => {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => deleteProject(project.id)}
                           className="text-destructive flex items-center gap-2"
                         >
@@ -197,17 +242,17 @@ const Dashboard = () => {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  
+
                   <Link to={`/project/${project.id}`}>
                     <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">
                       {project.name}
                     </h3>
                   </Link>
-                  
+
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {project.description}
                   </p>
-                  
+
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="font-mono">Updated {getRelativeTime(project.updatedAt)}</span>
                     <div className="flex gap-1">

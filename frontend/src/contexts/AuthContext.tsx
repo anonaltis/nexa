@@ -1,5 +1,7 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import type { User, UserPreferences } from "@/types/project";
+import { api } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -20,89 +22,97 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check localStorage for existing session
-    const storedUser = localStorage.getItem(STORAGE_KEY);
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        // Convert date strings back to Date objects
-        parsed.createdAt = new Date(parsed.createdAt);
-        setUser(parsed);
-      } catch (e) {
-        console.error("Failed to parse stored user:", e);
-        localStorage.removeItem(STORAGE_KEY);
-      }
+    // Check for existing token
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      // Ideally verify token with backend here, or decode basic info
+      // For simplicity, we assume if token exists, we are logged in.
+      // In a real app, you'd fetch /users/me
+      const email = localStorage.getItem("user_email") || "";
+      setUser({
+        id: "current", // MongoDB ID would come from /me endpoint
+        email: email,
+        name: email.split("@")[0],
+        createdAt: new Date(),
+        preferences: { theme: 'dark' }
+      });
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock login - ready for backend integration
-    // TODO: Replace with actual API call
-    const mockUser: User = {
-      id: crypto.randomUUID(),
-      email,
-      name: email.split("@")[0],
-      createdAt: new Date(),
-      preferences: {
-        theme: 'dark',
-      }
-    };
-    setUser(mockUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
-    return true;
+    try {
+      const formData = new FormData();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const response = await api.post('/auth/token', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const { access_token } = response.data;
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("user_email", email);
+
+      setUser({
+        id: "current",
+        email: email,
+        name: email.split("@")[0],
+        createdAt: new Date(),
+        preferences: { theme: 'dark' }
+      });
+      return true;
+    } catch (error) {
+      console.error("Login failed:", error);
+      return false;
+    }
   };
 
   const signup = async (email: string, password: string, name: string): Promise<boolean> => {
-    // Mock signup - ready for backend integration
-    // TODO: Replace with actual API call
-    const mockUser: User = {
-      id: crypto.randomUUID(),
-      email,
-      name,
-      createdAt: new Date(),
-      preferences: {
-        theme: 'dark',
-      }
-    };
-    setUser(mockUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
-    return true;
+    try {
+      await api.post('/auth/signup', {
+        email,
+        password,
+        name
+      });
+      // Auto login after signup
+      return await login(email, password);
+    } catch (error) {
+      console.error("Signup failed:", error);
+      return false;
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_email");
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   };
 
   const updateProfile = (data: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      setUser({ ...user, ...data });
     }
   };
 
   const updatePreferences = (prefs: Partial<UserPreferences>) => {
     if (user) {
-      const updatedUser = {
+      setUser({
         ...user,
         preferences: { ...user.preferences, ...prefs }
-      };
-      setUser(updatedUser as User);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      });
     }
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoading, 
-      login, 
-      signup, 
-      logout, 
+    <AuthContext.Provider value={{
+      user,
+      isLoading,
+      login,
+      signup,
+      logout,
       updateProfile,
-      updatePreferences 
+      updatePreferences
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
-from ..circuit_parser.models import CircuitData
-from ..circuit_parser.utils import parse_value
+from circuit_parser.models import CircuitData
+from circuit_parser.utils import parse_value
 
 class CircuitAnalyzer:
     def __init__(self, circuit_data: CircuitData):

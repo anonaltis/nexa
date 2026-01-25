@@ -29,7 +29,7 @@ const Login = () => {
           title: "Welcome back!",
           description: "You've successfully logged in.",
         });
-        navigate("/analyzer");
+        navigate("/dashboard");
       }
     } catch (error) {
       toast({
