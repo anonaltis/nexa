@@ -1,22 +1,39 @@
-# Nexa
+# Nexa - AI-Powered Electronics Engineering Platform
 
-Nexa is an advanced platform for electrical and electronics engineering education. Its core component, **CircuitSathi**, acts as an AI lab partner to help students analyze circuits and debug faults.
+Nexa is an advanced platform designed for electrical and electronics engineering education. It combines a sophisticated project management interface (**ElectroLab**) with a specialized reasoning engine (**CircuitSathi**) to help students plan, design, and debug hardware projects.
 
-## CircuitSathi
+## 🌟 Key Components
 
-CircuitSathi analyzes structured circuit descriptions to perform reasoning-based debugging. It helps students understand:
-- Circuit types
-- Core electrical rules (Ohm's Law, KVL/KCL, etc.)
-- Fault detection (Saturation, invalid grounds, etc.)
-- Reasoning timelines for debugging
+### 1. ElectroLab (Frontend)
+A modern, high-tech React interface that allows users to:
+- Plan projects using an AI-guided chat.
+- Manage projects with a comprehensive dashboard.
+- View and analyze PCB schematics.
+- Edit and manage firmware code.
 
-## Project Structure
+👉 **[Frontend Implementation Documentation](./frontend/README.md)**
 
-- **frontend/**
-  - `lovable-ui/`: User interface for interacting with Nexa/CircuitSathi.
-- **backend/**
-  - `circuit_parser/`: Parses circuit inputs.
-  - `fault_detection/`: Identifies potential circuit faults.
-  - `reasoning_engine/`: The core AI logic for CircuitSathi (prompts and inference).
-  - `api/`: API endpoints.
-- **demo/**: Test cases and example inputs.
+### 2. CircuitSathi (Backend)
+The intelligent reasoning engine that acts as an AI lab partner:
+- **Topology Analysis**: Automatically identifies circuit configurations.
+- **Fault Detection**: Pinpoints issues like saturation, clipping, and incorrect grounding.
+- **Explainable AI**: Provides step-by-step reasoning for every detected fault.
+- **Pedagogical Support**: Offers learning notes and suggested fixes.
+
+👉 **[Backend Implementation Documentation](./backend/README.md)**
+
+## 📂 Project Structure
+
+- **`frontend/`**: React/Vite application (ElectroLab).
+- **`backend/`**: FastAPI reasoning engine (CircuitSathi).
+- **`demo/`**: Test cases and example circuit descriptions.
+- **`docs/`**: General project planning and auxiliary documentation.
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/UI, Vite.
+- **Backend**: Python, FastAPI, Pydantic, Uvicorn.
+
+For detailed developer instructions, please refer to the respective documentation links above.
