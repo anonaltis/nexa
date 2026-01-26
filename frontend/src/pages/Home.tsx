@@ -59,23 +59,26 @@ const Home = () => {
             <Zap className="w-4 h-4 text-primary" />
             <span className="text-sm font-mono text-primary">AI-Powered Electronics Platform</span>
           </div>
-          
+
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Build Electronics Projects{" "}
             <span className="text-gradient-primary">With AI Guidance</span>
           </h1>
-          
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            From idea to hardware. ElectroLab helps you plan, design, and build 
+
+          <p className="text-lg text-white mb-8 max-w-2xl mx-auto">
+            From idea to hardware. ElectroLab helps you plan, design, and build
             electronics projects with AI-powered documentation, PCB diagrams, and code generation.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 gap-2">
               <Link to="/signup">
                 Start Building
                 <ArrowRight className="w-4 h-4" />
               </Link>
+            </Button>
+            <Button asChild variant="secondary" size="lg">
+              <Link to="/login">Try Demo</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link to="/about">Learn More</Link>
@@ -90,7 +93,7 @@ const Home = () => {
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Everything You Need</h2>
           <p className="text-muted-foreground">Powerful tools for every stage of your project</p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {features.map((feature, index) => (
             <div
@@ -118,7 +121,7 @@ const Home = () => {
           <h2 className="text-2xl md:text-3xl font-bold mb-4">How It Works</h2>
           <p className="text-muted-foreground">Four simple steps from idea to working hardware</p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {workflow.map((item, index) => (
             <div key={item.step} className="relative">
@@ -147,7 +150,7 @@ const Home = () => {
             Ready to Build Your Next Project?
           </h2>
           <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Join ElectroLab and start transforming your electronics ideas into reality 
+            Join ElectroLab and start transforming your electronics ideas into reality
             with AI-powered guidance every step of the way.
           </p>
           <Button asChild size="lg" className="bg-primary hover:bg-primary/90 gap-2">

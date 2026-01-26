@@ -5,11 +5,11 @@ import type { Project, ProjectStatus, ProjectCategory } from "@/types/project";
 interface ProjectContextType {
   projects: Project[];
   isLoading: boolean;
-  createProject: (name: string, description: string, category: ProjectCategory, tags?: string[]) => Project;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
+  createProject: (name: string, description: string, category: ProjectCategory, tags?: string[]) => Promise<Project | null>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
   getProject: (id: string) => Project | undefined;
-  updateProjectStatus: (id: string, status: ProjectStatus) => void;
+  updateProjectStatus: (id: string, status: ProjectStatus) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);

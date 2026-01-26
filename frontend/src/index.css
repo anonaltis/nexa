@@ -55,6 +55,29 @@
     --grid-color: 210 50% 20%;
     --blueprint-line: 210 80% 45%;
     
+    /* PCB Diagram Colors - Dark tech aesthetic */
+    --pcb-background: 220 30% 6%;
+    --pcb-grid: 210 40% 25%;
+    --pcb-outline: 210 60% 40%;
+    --pcb-trace: 180 60% 55%;
+    --pcb-trace-bottom: 200 50% 40%;
+    --pcb-chip: 220 25% 18%;
+    --pcb-chip-inner: 220 20% 22%;
+    --pcb-chip-stroke: 210 30% 35%;
+    --pcb-ic: 220 20% 25%;
+    --pcb-resistor: 30 25% 35%;
+    --pcb-capacitor: 200 40% 30%;
+    --pcb-led: 160 50% 25%;
+    --pcb-led-glow: 120 80% 50%;
+    --pcb-connector: 220 15% 30%;
+    --pcb-header: 220 18% 22%;
+    --pcb-crystal: 200 25% 35%;
+    --pcb-transistor: 220 20% 28%;
+    --pcb-pad: 45 70% 55%;
+    --pcb-pad-inner: 40 50% 45%;
+    --pcb-silkscreen: 210 20% 75%;
+    --pcb-text: 210 30% 80%;
+    
     /* Shadows and Glows */
     --shadow-card: 0 8px 32px -8px hsl(220 50% 3% / 0.8);
     --shadow-elevated: 0 16px 48px -12px hsl(220 50% 2% / 0.9);

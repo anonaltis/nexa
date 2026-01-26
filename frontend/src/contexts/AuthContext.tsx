@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  loginDemo: () => Promise<boolean>;
   signup: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
@@ -68,6 +69,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const loginDemo = async (): Promise<boolean> => {
+    try {
+      const response = await api.post('/auth/demo');
+      const { access_token } = response.data;
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("user_email", "demo@example.com");
+
+      setUser({
+        id: "demo",
+        email: "demo@example.com",
+        name: "Demo User",
+        createdAt: new Date(),
+        preferences: { theme: 'dark' }
+      });
+      return true;
+    } catch (error) {
+      console.error("Demo login failed:", error);
+      return false;
+    }
+  };
+
   const signup = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
       await api.post('/auth/signup', {
@@ -109,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user,
       isLoading,
       login,
+      loginDemo,
       signup,
       logout,
       updateProfile,

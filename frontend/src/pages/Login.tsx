@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Cpu, Eye, EyeOff } from "lucide-react";
+import { Cpu, Eye, EyeOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginDemo } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -126,6 +126,55 @@ const Login = () => {
               >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/50" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider">
+                    Quick Access
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={async () => {
+                    setIsLoading(true);
+                    const success = await loginDemo();
+                    if (success) {
+                      toast({
+                        title: "Demo Mode Activated",
+                        description: "Logged in as Demo User with sample projects.",
+                      });
+                      navigate("/dashboard");
+                    } else {
+                      toast({
+                        title: "Access Denied",
+                        description: "Could not connect to the demo server.",
+                        variant: "destructive",
+                      });
+                    }
+                    setIsLoading(false);
+                  }}
+                  disabled={isLoading}
+                  className="w-full group relative overflow-hidden border-primary/20 hover:border-primary/50 bg-primary/5 hover:bg-primary/10 transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                    <span>Login with Demo Account</span>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                </Button>
+
+                <p className="text-[10px] text-center text-muted-foreground uppercase tracking-tighter opacity-70">
+                  Instant access to all features • No registration required
+                </p>
+              </div>
             </form>
 
             <div className="mt-6 text-center">
