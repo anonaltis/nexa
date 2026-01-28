@@ -102,7 +102,5 @@ The advanced reasoning features require a **Gemini API Key**. Add it to your `ba
 
 ### 3. "Component Not Found"
 When using the Circuit Analyzer, be specific with component names (e.g., "LM358", "BC547") to get the most accurate analysis.
-
 ---
-
 *© 2026 Nexa Platform — Engineering Intelligence for Everyone*
