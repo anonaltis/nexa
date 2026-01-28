@@ -1,8 +1,8 @@
 
 import axios from 'axios';
 
-// Defaults to localhost:8000 if not set
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Defaults to localhost:5000 (Main Backend)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const api = axios.create({
     baseURL: API_URL,
@@ -11,9 +11,11 @@ export const api = axios.create({
     },
 });
 
+const STORAGE_KEY = 'access_token';
+
 // Add a request interceptor to attach the token
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem(STORAGE_KEY);
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +28,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && error.response.status === 401) {
             // Token is invalid or expired
-            localStorage.removeItem('access_token');
+            localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem('user_email');
 
             // Redirect to login if not already there
@@ -37,3 +39,35 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+/**
+ * Chat API
+ */
+export const chatWithAI = async (content: string, projectId?: string) => {
+    const response = await api.post('/chat/message', { content, projectId });
+    return response.data;
+};
+
+/**
+ * Circuit Analysis API (Structured)
+ */
+export const analyzeCircuit = async (circuitData: any) => {
+    const response = await api.post('/analyze', circuitData);
+    return response.data;
+};
+
+/**
+ * Circuit Analysis API (Text-based)
+ */
+export const analyzeCircuitText = async (text: string) => {
+    const response = await api.post('/analyze-text', { text });
+    return response.data;
+};
+
+/**
+ * Code Generation API
+ */
+export const generateCode = async (text: string, board: string = "esp32") => {
+    const response = await api.post('/generate-code', { text, board });
+    return response.data;
+};

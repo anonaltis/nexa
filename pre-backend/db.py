@@ -13,9 +13,13 @@ class Database:
     db = None
 
     def connect(self):
-        self.client = AsyncIOMotorClient(MONGODB_URL)
-        self.db = self.client[DB_NAME]
-        print(f"Connected to MongoDB at {MONGODB_URL}")
+        try:
+            self.client = AsyncIOMotorClient(MONGODB_URL, serverSelectionTimeoutMS=2000)
+            self.db = self.client[DB_NAME]
+            print(f"Connected to MongoDB at {MONGODB_URL}")
+        except Exception as e:
+            print(f"❌ Failed to connect to MongoDB: {e}")
+            self.db = None
 
     def close(self):
         if self.client:

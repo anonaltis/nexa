@@ -1,39 +1,81 @@
 # Nexa - AI-Powered Electronics Engineering Platform
 
-Nexa is an advanced platform designed for electrical and electronics engineering education. It combines a sophisticated project management interface (**ElectroLab**) with a specialized reasoning engine (**CircuitSathi**) to help students plan, design, and debug hardware projects.
+Nexa is an advanced, full-stack platform designed for electrical and electronics engineering students and makers. It combines a sophisticated project management interface (**ElectroLab**) with a specialized AI reasoning engine (**CircuitSathi**) and **Gemini AI** to help you plan, design, and debug hardware projects.
 
-## 🌟 Key Components
+---
+
+## 🚀 Quick Start
+
+The easiest way to get started is to use the provided execution script which runs both the frontend and multi-service backend concurrently.
+
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- npm
+- MongoDB (running at localhost:27017)
+
+### Running the Platform
+```bash
+# 1. Clone the repository
+# 2. Add your GEMINI_API_KEY and MONGODB_URL to backend/.env
+# 3. Run the startup script
+chmod +x run.sh
+./run.sh
+```
+The platform will be available at:
+- **Frontend**: [http://localhost:5173](http://localhost:5173)
+- **Main Backend API**: [http://localhost:5000](http://localhost:5000)
+- **AI Microservice**: [http://localhost:8000](http://localhost:8000) (Internal)
+
+---
+
+## 🌟 Architecture Overview
+
+Nexa uses a robust triple-service architecture:
 
 ### 1. ElectroLab (Frontend)
-A modern, high-tech React interface that allows users to:
-- Plan projects using an AI-guided chat.
-- Manage projects with a comprehensive dashboard.
-- View and analyze PCB schematics.
-- Edit and manage firmware code.
+A modern React interface on port **5173** that communicates strictly with the Main Backend.
 
-👉 **[Frontend Implementation Documentation](./frontend/README.md)**
+### 2. Main Backend (Node.js/TypeScript)
+The primary application server on port **5000**.
+- **Auth & Projects**: Managed natively via Mongoose and JWT.
+- **Orchestration**: Forwards complex hardware queries to the AI engine.
+- **Security**: Centralized middleware and data validation.
 
-### 2. CircuitSathi (Backend)
-The intelligent reasoning engine that acts as an AI lab partner:
-- **Topology Analysis**: Automatically identifies circuit configurations.
-- **Fault Detection**: Pinpoints issues like saturation, clipping, and incorrect grounding.
-- **Explainable AI**: Provides step-by-step reasoning for every detected fault.
-- **Pedagogical Support**: Offers learning notes and suggested fixes.
+### 3. AI Microservice (Python)
+The specialized reasoning engine on port **8000**.
+- **Logic**: Houses `CircuitSathi` physics engine and Google Gemini integrations.
+- **Specialized**: Strictly for computation and AI generation.
 
-👉 **[Backend Implementation Documentation](./backend/README.md)**
+👉 **[User Manual](./USER_MANUAL.md)** | **[Technical Docs](./backend/README.md)**
+
+---
 
 ## 📂 Project Structure
 
-- **`frontend/`**: React/Vite application (ElectroLab).
-- **`backend/`**: FastAPI reasoning engine (CircuitSathi).
-- **`demo/`**: Test cases and example circuit descriptions.
-- **`docs/`**: General project planning and auxiliary documentation.
+```text
+nexa/
+├── backend/            # UNIFIED BACKEND
+│   ├── src/            # Node.js Source (Auth, Projects, Routes)
+│   ├── ai-engine/      # Python AI Microservice (CircuitSathi)
+│   │   ├── main.py     # AI computation endpoints
+│   │   └── reasoning_engine/ # Physics logic
+│   └── .env            # Shared secrets & MONGODB config
+├── frontend/           # React/Vite application (ElectroLab)
+├── run.sh              # One-click startup script
+└── README.md           # This file
+```
 
 ---
 
 ## 🛠 Tech Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/UI, Vite.
-- **Backend**: Python, FastAPI, Pydantic, Uvicorn.
+- **Main Backend**: Node.js, Express, Mongoose, JWT, TypeScript.
+- **AI Service**: Python 3.12, FastAPI, Google Gemini GenAI.
+- **Database**: MongoDB.
 
-For detailed developer instructions, please refer to the respective documentation links above.
+---
+
+## ⚖️ License
+This project is licensed under the MIT License.

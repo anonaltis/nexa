@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from datetime import timedelta
+from datetime import timedelta, datetime
 from models import UserCreate, Token, User, UserInDB
 from auth_utils import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from db import db
@@ -55,42 +55,41 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.post("/demo", response_model=Token)
 async def demo_login():
     demo_email = "demo@example.com"
-    demo_user = await db.db.users.find_one({"email": demo_email})
     
-    if not demo_user:
-        hashed_password = get_password_hash("demo1234")
-        user_in_db = {
-            "email": demo_email,
-            "name": "Demo User",
-            "hashed_password": hashed_password,
-            "created_at": datetime.utcnow()
-        }
-        await db.db.users.insert_one(user_in_db)
+    try:
+        # Try to use database if available
+        demo_user = await db.db.users.find_one({"email": demo_email})
         
-        # Seed some demo projects
-        demo_projects = [
-            {
-                "name": "Smart Temperature Monitor",
-                "description": "An IoT device that monitors temperature and humidity and displays it on an OLED screen.",
-                "category": "iot",
-                "status": "completed",
-                "tags": ["esp32", "dht22", "oled"],
-                "user_id": demo_email,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
-            },
-            {
-                "name": "Motor Controller",
-                "description": "PWM-based motor speed controller for a small robot chassis.",
-                "category": "robotics",
-                "status": "building",
-                "tags": ["arduino", "l298n"],
-                "user_id": demo_email,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+        if not demo_user:
+            print("🚀 Seeding demo user...")
+            hashed_password = get_password_hash("demo1234")
+            user_in_db = {
+                "email": demo_email,
+                "name": "Demo User",
+                "hashed_password": hashed_password,
+                "created_at": datetime.utcnow()
             }
-        ]
-        await db.db.projects.insert_many(demo_projects)
+            await db.db.users.insert_one(user_in_db)
+            
+            # Seed some demo projects
+            demo_projects = [
+                {
+                    "name": "Smart Temperature Monitor",
+                    "description": "An IoT device that monitors temperature and humidity and displays it on an OLED screen.",
+                    "category": "iot",
+                    "status": "completed",
+                    "tags": ["esp32", "dht22", "oled"],
+                    "user_id": demo_email,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+            ]
+            await db.db.projects.insert_many(demo_projects)
+            print("✅ Demo data seeded.")
+    except Exception as e:
+        print(f"⚠️ Database connection failed: {e}. Proceeding with Mock Demo Mode.")
+        # We continue even if DB fails, allowing the frontend to at least log in.
+        pass
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

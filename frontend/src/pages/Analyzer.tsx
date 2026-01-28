@@ -1,12 +1,13 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
-import CircuitInputPanel from "@/components/CircuitInputPanel";
-import CircuitHistoryPanel from "@/components/CircuitHistoryPanel";
-import ReasoningPanel from "@/components/ReasoningPanel";
-import FaultDetectionPanel from "@/components/FaultDetectionPanel";
-import CorrectionPanel from "@/components/CorrectionPanel";
-import LearningNotesPanel from "@/components/LearningNotesPanel";
+import CircuitInputPanel from "@/components/analyzer/CircuitInputPanel";
+import CircuitHistoryPanel from "@/components/analyzer/CircuitHistoryPanel";
+import ReasoningPanel from "@/components/analyzer/ReasoningPanel";
+import FaultDetectionPanel from "@/components/analyzer/FaultDetectionPanel";
+import CorrectionPanel from "@/components/analyzer/CorrectionPanel";
+import LearningNotesPanel from "@/components/analyzer/LearningNotesPanel";
 import { useCircuitHistory, CircuitAnalysis } from "@/hooks/useCircuitHistory";
+<<<<<<< HEAD
 import BodePlot from "@/components/analysis/BodePlot";
 import TruthTable from "@/components/analysis/TruthTable";
 import PowerAnalysis from "@/components/analysis/PowerAnalysis";
@@ -181,14 +182,26 @@ const mockLearningNotes = [
     formula: "BW = GBW / Gain",
   },
 ];
+=======
+import { useCircuitAnalysis } from "@/hooks/useCircuitAnalysis";
+>>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
 
 const Analyzer = () => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisComplete, setAnalysisComplete] = useState(false);
   const [currentCircuitInput, setCurrentCircuitInput] = useState("");
   const [detectedCircuitType, setDetectedCircuitType] = useState<string>("opamp");
   const { history, addAnalysis, removeAnalysis, clearHistory } = useCircuitHistory();
+  const {
+    analyze,
+    isAnalyzing,
+    analysisComplete,
+    reasoningSteps,
+    faults,
+    corrections,
+    expectedOutputs,
+    learningNotes
+  } = useCircuitAnalysis();
 
+<<<<<<< HEAD
   const detectCircuitType = (input: string): string => {
     const lowerInput = input.toLowerCase();
     if (lowerInput.includes("filter") || lowerInput.includes("rc") || lowerInput.includes("capacitor")) {
@@ -227,6 +240,17 @@ const Analyzer = () => {
       // Save to history
       addAnalysis(input, mockFaults.length, highestSeverity);
     }, 2000);
+=======
+  const handleAnalyze = async (input: string) => {
+    setCurrentCircuitInput(input);
+    try {
+      const result = await analyze(input);
+      const highestSeverity = result.detected_faults.length > 0 ? "high" : "low" as any;
+      addAnalysis(input, result.detected_faults.length, highestSeverity);
+    } catch (error) {
+      console.error("Analysis failed", error);
+    }
+>>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
   };
 
   const handleSelectHistory = (analysis: CircuitAnalysis) => {
@@ -323,6 +347,7 @@ const Analyzer = () => {
         {analysisComplete && (
           <>
             <div className="subtle-divider my-8" />
+<<<<<<< HEAD
 
             {/* Circuit Type Badge */}
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -342,15 +367,26 @@ const Analyzer = () => {
 
             <div className="subtle-divider my-8" />
 
+=======
+            <ReasoningPanel steps={reasoningSteps} isVisible={analysisComplete} />
+            <div className="subtle-divider my-8" />
+            <FaultDetectionPanel faults={faults} isVisible={analysisComplete} />
+            <div className="subtle-divider my-8" />
+>>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
             <CorrectionPanel
-              corrections={mockCorrections}
-              expectedOutputs={mockExpectedOutputs}
+              corrections={corrections}
+              expectedOutputs={expectedOutputs}
               isVisible={analysisComplete}
             />
+<<<<<<< HEAD
 
             <div className="subtle-divider my-8" />
 
             <LearningNotesPanel notes={mockLearningNotes} isVisible={analysisComplete} />
+=======
+            <div className="subtle-divider my-8" />
+            <LearningNotesPanel notes={learningNotes} isVisible={analysisComplete} />
+>>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
           </>
         )}
       </div>

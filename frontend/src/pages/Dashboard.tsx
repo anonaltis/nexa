@@ -14,7 +14,8 @@ import {
   Cpu,
   Bot,
   Code,
-  Trash2
+  Trash2,
+  Zap
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -96,15 +97,39 @@ const Dashboard = () => {
           </div>
 
           {/* Quick Tools */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <Link to="/chat" className="group">
               <div className="blueprint-card p-6 flex items-center gap-4 hover:border-primary/50 transition-colors h-full">
                 <div className="p-3 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">New Project</h3>
+                  <p className="text-sm text-muted-foreground">Start guided planning</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/troubleshoot" className="group">
+              <div className="blueprint-card p-6 flex items-center gap-4 hover:border-red-500/50 transition-colors h-full">
+                <div className="p-3 rounded-full bg-red-500/10 text-red-500 group-hover:scale-110 transition-transform">
                   <Bot className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">AI Assistant</h3>
-                  <p className="text-sm text-muted-foreground">Start a new chat</p>
+                  <h3 className="font-semibold">Hardware Troubleshooter</h3>
+                  <p className="text-sm text-muted-foreground">Ask AI for PCB help</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link to="/analyzer" className="group">
+              <div className="blueprint-card p-6 flex items-center gap-4 hover:border-blue-500/50 transition-colors h-full">
+                <div className="p-3 rounded-full bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Circuit Analyzer</h3>
+                  <p className="text-sm text-muted-foreground">Debug circuits</p>
                 </div>
               </div>
             </Link>
