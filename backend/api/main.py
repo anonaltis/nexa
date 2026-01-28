@@ -7,6 +7,13 @@ from reasoning_engine.engine import ReasoningEngine
 from api.auth import router as auth_router
 from api.projects import router as projects_router
 from api.chat import router as chat_router
+from api.chat_v2 import router as chat_v2_router
+from api.chat_v3 import router as chat_v3_router
+from api.chat_history import router as chat_history_router
+from api.code import router as code_router
+from api.pcb import router as pcb_router
+from api.components import router as components_router
+from api.schematics import router as schematics_router
 from db import db
 
 @asynccontextmanager
@@ -39,6 +46,13 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(projects_router, prefix="/projects", tags=["projects"])
 app.include_router(chat_router, prefix="/chat", tags=["chat"])
+app.include_router(chat_v2_router, prefix="/v2/chat", tags=["chat-v2"])
+app.include_router(chat_v3_router)  # v3 has its own prefix: /api/v3/chat
+app.include_router(chat_history_router, prefix="/chat", tags=["chat-history"])
+app.include_router(code_router, prefix="/code", tags=["code"])
+app.include_router(pcb_router, prefix="/pcb", tags=["pcb"])
+app.include_router(components_router, prefix="/components", tags=["components"])
+app.include_router(schematics_router, prefix="/schematics", tags=["schematics"])
 
 @app.get("/")
 def read_root():

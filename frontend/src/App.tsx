@@ -15,7 +15,11 @@ import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
+import Components from "./pages/Components";
+import Analyzer from "./pages/Analyzer";
+import SchematicEditor from "./pages/SchematicEditor";
 import NotFound from "./pages/NotFound";
+import AITestLab from "./pages/AITestLab";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +42,10 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/components" element={<Components />} />
+              <Route path="/analyzer" element={<Analyzer />} />
+              <Route path="/schematic" element={<SchematicEditor />} />
+              <Route path="/test-lab" element={<AITestLab />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

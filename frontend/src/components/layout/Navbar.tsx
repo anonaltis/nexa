@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { CircuitBoard, Menu, X, User, LogOut, LayoutDashboard, MessageSquare, Cpu, Code } from "lucide-react";
+import { CircuitBoard, Menu, X, User, LogOut, LayoutDashboard, MessageSquare, Cpu, Code, Activity, PenTool, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -19,8 +19,11 @@ const Navbar = () => {
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "New Project", path: "/chat", icon: MessageSquare },
+    { name: "Schematic", path: "/schematic", icon: PenTool },
     { name: "PCB Viewer", path: "/pcb", icon: Cpu },
     { name: "Code Editor", path: "/code", icon: Code },
+    { name: "Analyzer", path: "/analyzer", icon: Activity },
+    { name: "Components", path: "/components", icon: Database },
   ];
 
   const isActive = (path: string) => location.pathname === path;

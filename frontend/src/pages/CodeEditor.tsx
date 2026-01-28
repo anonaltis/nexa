@@ -3,17 +3,18 @@ import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
-import { 
-  Code, 
-  Play, 
-  Download, 
-  Copy, 
+import {
+  Code,
+  Download,
+  Copy,
   Check,
   ExternalLink,
   FileCode,
   Terminal,
   Cpu,
-  Usb
+  Usb,
+  Cable,
+  BookOpen,
 } from "lucide-react";
 import {
   Select,
@@ -23,95 +24,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import CodeGenerationDialog from "@/components/code/CodeGenerationDialog";
 
-// Mock code - ready for AI code generation backend
-const mockArduinoCode = `/*
- * Smart Temperature Monitor
- * ElectroLab Generated Code
- * 
- * Hardware:
- * - ESP32 DevKit v1
- * - DHT22 Sensor (GPIO4)
- * - OLED Display (I2C: GPIO21, GPIO22)
- */
-
-#include <WiFi.h>
-#include <DHT.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
-// Pin Definitions
-#define DHTPIN 4
-#define DHTTYPE DHT22
-
-// WiFi Credentials
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
-
-// OLED Display
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_RESET -1
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-// DHT Sensor
-DHT dht(DHTPIN, DHTTYPE);
-
-void setup() {
-  Serial.begin(115200);
-  
-  // Initialize DHT sensor
-  dht.begin();
-  
-  // Initialize OLED display
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
-  }
-  
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  display.println(F("ElectroLab"));
-  display.println(F("Temperature Monitor"));
-  display.display();
-  delay(2000);
+interface CodeFile {
+  filename: string;
+  language: string;
+  content: string;
 }
 
-void loop() {
-  // Read sensor data
-  float humidity = dht.readHumidity();
-  float temperature = dht.readTemperature();
-  
-  // Check if read failed
-  if (isnan(humidity) || isnan(temperature)) {
-    Serial.println(F("Failed to read from DHT sensor!"));
-    return;
-  }
-  
-  // Display readings
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.println(F("Temperature Monitor"));
-  display.println();
-  display.setTextSize(2);
-  display.print(temperature, 1);
-  display.println(F(" C"));
-  display.print(humidity, 1);
-  display.println(F(" %"));
-  display.display();
-  
-  // Print to Serial
-  Serial.print(F("Temperature: "));
-  Serial.print(temperature);
-  Serial.print(F(" C, Humidity: "));
-  Serial.print(humidity);
-  Serial.println(F(" %"));
-  
-  delay(2000);
-}`;
+interface LibraryInfo {
+  name: string;
+  version?: string;
+  manager?: string;
+}
+
+interface WiringInfo {
+  component: string;
+  pin: string;
+  board_pin: string;
+}
+
+interface GeneratedCode {
+  files: CodeFile[];
+  libraries: LibraryInfo[];
+  wiring: WiringInfo[];
+  notes?: string;
+}
 
 const vsCodeExtensions = [
   {
@@ -134,14 +73,96 @@ const vsCodeExtensions = [
   },
 ];
 
+// Default code shown before generation
+const defaultCode: GeneratedCode = {
+  files: [
+    {
+      filename: "main.ino",
+      language: "arduino",
+      content: `/*
+ * ElectroLab - AI Code Generator
+ *
+ * Click "Generate Code" to create custom code
+ * for your electronics project!
+ *
+ * Supported boards:
+ * - ESP32
+ * - ESP8266
+ * - Arduino Uno/Nano
+ * - Raspberry Pi Pico
+ */
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Welcome to ElectroLab!");
+  Serial.println("Generate your project code using AI.");
+}
+
+void loop() {
+  // Your code will appear here
+  delay(1000);
+}`,
+    },
+  ],
+  libraries: [],
+  wiring: [],
+  notes: "Use the Generate Code button to create custom code for your project.",
+};
+
 const CodeEditor = () => {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<GeneratedCode>(defaultCode);
+  const [activeFile, setActiveFile] = useState("main.ino");
+  const [selectedBoard, setSelectedBoard] = useState("esp32");
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(mockArduinoCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const currentFile = generatedCode.files.find(
+      (f) => f.filename === activeFile
+    );
+    if (currentFile) {
+      navigator.clipboard.writeText(currentFile.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDownload = () => {
+    const currentFile = generatedCode.files.find(
+      (f) => f.filename === activeFile
+    );
+    if (currentFile) {
+      const blob = new Blob([currentFile.content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentFile.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleDownloadAll = () => {
+    generatedCode.files.forEach((file) => {
+      const blob = new Blob([file.content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  };
+
+  const handleCodeGenerated = (code: GeneratedCode) => {
+    setGeneratedCode(code);
+    if (code.files.length > 0) {
+      setActiveFile(code.files[0].filename);
+    }
   };
 
   if (!user) {
@@ -158,6 +179,8 @@ const CodeEditor = () => {
     );
   }
 
+  const currentFile = generatedCode.files.find((f) => f.filename === activeFile);
+
   return (
     <Layout>
       <div className="py-8">
@@ -165,10 +188,12 @@ const CodeEditor = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Code Editor</h1>
-            <p className="text-muted-foreground">ESP32 & Arduino code generation</p>
+            <p className="text-muted-foreground">
+              AI-powered code generation for ESP32 & Arduino
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <Select defaultValue="esp32">
+            <Select value={selectedBoard} onValueChange={setSelectedBoard}>
               <SelectTrigger className="w-40 bg-input border-border">
                 <SelectValue placeholder="Select board" />
               </SelectTrigger>
@@ -177,26 +202,34 @@ const CodeEditor = () => {
                 <SelectItem value="esp8266">ESP8266</SelectItem>
                 <SelectItem value="arduino-uno">Arduino Uno</SelectItem>
                 <SelectItem value="arduino-nano">Arduino Nano</SelectItem>
+                <SelectItem value="raspberry-pi-pico">RPi Pico</SelectItem>
               </SelectContent>
             </Select>
+            <CodeGenerationDialog onCodeGenerated={handleCodeGenerated} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Code Panel */}
           <div className="lg:col-span-3">
-            <Tabs defaultValue="main" className="w-full">
+            <Tabs
+              value={activeFile}
+              onValueChange={setActiveFile}
+              className="w-full"
+            >
               <div className="blueprint-card">
                 <div className="flex items-center justify-between p-3 border-b border-border">
                   <TabsList className="bg-muted/50">
-                    <TabsTrigger value="main" className="gap-2 data-[state=active]:bg-primary/20">
-                      <FileCode className="w-4 h-4" />
-                      main.ino
-                    </TabsTrigger>
-                    <TabsTrigger value="config" className="gap-2 data-[state=active]:bg-primary/20">
-                      <FileCode className="w-4 h-4" />
-                      config.h
-                    </TabsTrigger>
+                    {generatedCode.files.map((file) => (
+                      <TabsTrigger
+                        key={file.filename}
+                        value={file.filename}
+                        className="gap-2 data-[state=active]:bg-primary/20"
+                      >
+                        <FileCode className="w-4 h-4" />
+                        {file.filename}
+                      </TabsTrigger>
+                    ))}
                   </TabsList>
                   <div className="flex items-center gap-2">
                     <Button
@@ -207,7 +240,7 @@ const CodeEditor = () => {
                     >
                       {copied ? (
                         <>
-                          <Check className="w-4 h-4 text-success" />
+                          <Check className="w-4 h-4 text-green-500" />
                           Copied!
                         </>
                       ) : (
@@ -217,46 +250,81 @@ const CodeEditor = () => {
                         </>
                       )}
                     </Button>
-                    <Button className="bg-primary hover:bg-primary/90 gap-2" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownload}
+                      className="gap-2"
+                    >
                       <Download className="w-4 h-4" />
                       Download
                     </Button>
+                    {generatedCode.files.length > 1 && (
+                      <Button
+                        className="bg-primary hover:bg-primary/90 gap-2"
+                        size="sm"
+                        onClick={handleDownloadAll}
+                      >
+                        <Download className="w-4 h-4" />
+                        Download All
+                      </Button>
+                    )}
                   </div>
                 </div>
 
-                <TabsContent value="main" className="m-0">
-                  <pre className="code-block p-4 overflow-auto max-h-[500px] text-xs">
-                    <code className="text-foreground">{mockArduinoCode}</code>
-                  </pre>
-                </TabsContent>
-
-                <TabsContent value="config" className="m-0">
-                  <pre className="code-block p-4 overflow-auto max-h-[500px] text-xs">
-                    <code className="text-foreground">{`// Configuration file
-#ifndef CONFIG_H
-#define CONFIG_H
-
-// WiFi Settings
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-
-// Pin Definitions
-#define DHT_PIN 4
-#define DHT_TYPE DHT22
-
-// Display Settings
-#define OLED_WIDTH 128
-#define OLED_HEIGHT 64
-
-#endif`}</code>
-                  </pre>
-                </TabsContent>
+                {generatedCode.files.map((file) => (
+                  <TabsContent key={file.filename} value={file.filename} className="m-0">
+                    <ScrollArea className="h-[500px]">
+                      <pre className="code-block p-4 text-xs">
+                        <code className="text-foreground">{file.content}</code>
+                      </pre>
+                    </ScrollArea>
+                  </TabsContent>
+                ))}
               </div>
             </Tabs>
+
+            {/* Notes Section */}
+            {generatedCode.notes && (
+              <div className="mt-4 p-4 blueprint-card">
+                <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  Notes
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {generatedCode.notes}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-4">
+            {/* Wiring Diagram */}
+            {generatedCode.wiring.length > 0 && (
+              <div className="blueprint-card p-4">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Cable className="w-4 h-4 text-primary" />
+                  Wiring Connections
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {generatedCode.wiring.map((wire, idx) => (
+                    <div
+                      key={idx}
+                      className="flex justify-between p-2 rounded bg-muted/30"
+                    >
+                      <span className="text-muted-foreground">
+                        {wire.component} {wire.pin}
+                      </span>
+                      <span className="font-mono text-primary">
+                        {wire.board_pin}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Upload Instructions */}
             <div className="blueprint-card p-4">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -270,7 +338,7 @@ const CodeEditor = () => {
                 </li>
                 <li className="flex gap-2">
                   <span className="text-primary font-mono">2.</span>
-                  <span>Connect ESP32 via USB</span>
+                  <span>Connect your board via USB</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-primary font-mono">3.</span>
@@ -282,6 +350,31 @@ const CodeEditor = () => {
                 </li>
               </ol>
             </div>
+
+            {/* Required Libraries */}
+            {generatedCode.libraries.length > 0 && (
+              <div className="blueprint-card p-4">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-primary" />
+                  Required Libraries
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {generatedCode.libraries.map((lib, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded bg-muted/30"
+                    >
+                      <span className="font-mono">{lib.name}</span>
+                      {lib.version && (
+                        <span className="text-xs text-muted-foreground">
+                          v{lib.version}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* VS Code Extensions */}
             <div className="blueprint-card p-4">
@@ -309,25 +402,6 @@ const CodeEditor = () => {
                     </div>
                   </a>
                 ))}
-              </div>
-            </div>
-
-            {/* Required Libraries */}
-            <div className="blueprint-card p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-primary" />
-                Required Libraries
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-                  <span className="font-mono">DHT sensor library</span>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-                  <span className="font-mono">Adafruit SSD1306</span>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-                  <span className="font-mono">Adafruit GFX</span>
-                </div>
               </div>
             </div>
           </div>

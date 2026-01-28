@@ -1,0 +1,247 @@
+# Common Beginner Mistakes in Electronics
+# Used for proactive warnings and teaching moments
+
+led:
+  mistakes:
+    - mistake: "Forgetting current limiting resistor"
+      consequence: "LED burns out instantly"
+      severity: "critical"
+      explanation: "LEDs have very low internal resistance. Without a resistor, current is only limited by power supply, which is typically far more than LED can handle."
+      fix: "Always calculate resistor: R = (Vs - Vf) / If"
+      example: "For 5V, red LED (1.8V), 15mA: R = (5-1.8)/0.015 = 213Ω, use 220Ω"
+
+    - mistake: "Reversing LED polarity"
+      consequence: "LED won't light (usually no damage)"
+      severity: "low"
+      explanation: "LEDs are diodes - they only conduct in one direction."
+      fix: "Longer leg = anode (+), shorter leg/flat side = cathode (-)"
+      tip: "Remember: L-ong leg goes to L-ive (positive)"
+
+    - mistake: "Using resistor value from internet without checking supply voltage"
+      consequence: "Dim or burned LED"
+      severity: "medium"
+      explanation: "Resistor value depends on YOUR supply voltage, not a generic example."
+      fix: "Always calculate based on your actual Vs"
+
+  prevention:
+    - "Always draw schematic before building"
+    - "Double-check LED orientation before powering"
+    - "Use 220-330Ω as safe default for 5V supply"
+    - "Test with multimeter diode mode first"
+
+power_supply:
+  mistakes:
+    - mistake: "Reverse polarity connection"
+      consequence: "Instant component damage"
+      severity: "critical"
+      explanation: "Most semiconductors cannot survive reverse voltage. Protection diodes may not be present."
+      fix: "Use polarized connectors, add protection diode, check before connecting"
+
+    - mistake: "Missing decoupling capacitors"
+      consequence: "Noise, instability, random resets"
+      severity: "medium"
+      explanation: "ICs draw current in short bursts. Without local capacitors, voltage droops cause errors."
+      fix: "Add 0.1µF ceramic capacitor between Vcc and GND, close to each IC"
+
+    - mistake: "Exceeding regulator input voltage"
+      consequence: "Regulator overheats or fails"
+      severity: "high"
+      explanation: "Linear regulators dissipate (Vin-Vout)×I as heat."
+      fix: "Check datasheet max Vin, calculate power dissipation"
+
+    - mistake: "No current limit during testing"
+      consequence: "Destroyed components, possible fire"
+      severity: "high"
+      fix: "Use bench supply with adjustable current limit, start low"
+
+  prevention:
+    - "Add series diode for reverse protection"
+    - "Use benchtop power supply during development"
+    - "Calculate P = (Vin-Vout) × I for regulators"
+    - "Add 0.1µF ceramic near every IC VCC pin"
+
+grounding:
+  mistakes:
+    - mistake: "No common ground between modules"
+      consequence: "Erratic behavior, communication failures"
+      severity: "high"
+      explanation: "Signals are measured relative to ground. Different grounds = different references."
+      fix: "Connect GND between all modules/boards first"
+
+    - mistake: "Ground loops in sensitive circuits"
+      consequence: "50/60Hz hum, noise"
+      severity: "medium"
+      explanation: "Multiple ground paths create loops that pickup magnetic fields."
+      fix: "Use single-point (star) grounding"
+
+    - mistake: "Long ground wires"
+      consequence: "Voltage drops, noise pickup"
+      severity: "medium"
+      fix: "Keep ground connections short and direct"
+
+  prevention:
+    - "Always verify ground continuity first"
+    - "Draw ground connections explicitly in schematic"
+    - "Use ground plane on PCBs"
+
+breadboard:
+  mistakes:
+    - mistake: "Not understanding breadboard connections"
+      consequence: "Unexpected shorts or opens"
+      severity: "medium"
+      explanation: "Rows are connected horizontally (with gap in middle), rails run vertically."
+      fix: "Study breadboard internal connections before using"
+
+    - mistake: "Loose component connections"
+      consequence: "Intermittent failures"
+      severity: "medium"
+      fix: "Push components firmly, trim long leads, avoid thick wires"
+
+    - mistake: "Power rails not continuous"
+      consequence: "Part of circuit has no power"
+      severity: "medium"
+      explanation: "Some breadboards have breaks in power rails."
+      fix: "Add jumper wires across rail breaks"
+
+    - mistake: "Components bridging the center gap incorrectly"
+      consequence: "Pins shorted together"
+      severity: "high"
+      fix: "ICs should straddle the center gap with pins on opposite sides"
+
+  prevention:
+    - "Test continuity with multimeter"
+    - "Use color-coded wires (red=power, black=ground)"
+    - "Keep wires neat and organized"
+    - "Check breadboard datasheet for rail breaks"
+
+multimeter:
+  mistakes:
+    - mistake: "Measuring resistance on powered circuit"
+      consequence: "Wrong reading, possible meter damage"
+      severity: "medium"
+      fix: "Always remove power before measuring resistance"
+
+    - mistake: "Measuring current across voltage source"
+      consequence: "Blown fuse, possible damage"
+      severity: "high"
+      explanation: "Current measurement requires series connection, not parallel."
+      fix: "Break circuit and insert meter in series"
+
+    - mistake: "Wrong range selected"
+      consequence: "No reading or damaged meter"
+      severity: "medium"
+      fix: "Start with highest range, work down"
+
+    - mistake: "Probes in wrong jacks for current measurement"
+      consequence: "Short circuit, blown fuse"
+      severity: "high"
+      fix: "Use dedicated current jacks (usually marked A or mA)"
+
+  prevention:
+    - "Double-check function and range before connecting"
+    - "Start with highest range"
+    - "Use meter manual to understand connections"
+
+microcontroller:
+  mistakes:
+    - mistake: "Exceeding GPIO current limits"
+      consequence: "Damaged pins or MCU"
+      severity: "high"
+      explanation: "Most GPIOs can only source/sink 20-40mA."
+      fix: "Use transistor/MOSFET driver for motors, relays, high-current LEDs"
+
+    - mistake: "No current limiting resistor on GPIO LED"
+      consequence: "Damaged GPIO pin"
+      severity: "high"
+      fix: "Always use resistor even for low-power LEDs"
+
+    - mistake: "Connecting 5V signals to 3.3V MCU"
+      consequence: "Damaged MCU"
+      severity: "critical"
+      fix: "Use voltage divider or level shifter"
+
+    - mistake: "Floating input pins"
+      consequence: "Random readings, noise"
+      severity: "medium"
+      fix: "Use internal pull-up or external pull-down resistor"
+
+  prevention:
+    - "Check datasheet for GPIO specifications"
+    - "Use current-limiting resistors on all LED outputs"
+    - "Enable internal pull-ups for button inputs"
+    - "Use level shifters between voltage domains"
+
+capacitor:
+  mistakes:
+    - mistake: "Reversing electrolytic capacitor polarity"
+      consequence: "Capacitor can explode"
+      severity: "critical"
+      explanation: "Electrolytic capacitors are polarized - negative plate is marked."
+      fix: "Check stripe marking (negative), verify before connecting"
+
+    - mistake: "Exceeding voltage rating"
+      consequence: "Dielectric breakdown, failure, possible explosion"
+      severity: "critical"
+      fix: "Use capacitors rated 20-50% above operating voltage"
+
+    - mistake: "Using electrolytic for high-frequency filtering"
+      consequence: "Poor filtering, ESR issues"
+      severity: "medium"
+      explanation: "Electrolytics have high ESR and inductance."
+      fix: "Use ceramic capacitors for high-frequency bypass"
+
+  prevention:
+    - "Mark polarity on schematic"
+    - "Double-check stripe = negative"
+    - "Use ceramics for bypass, electrolytics for bulk storage"
+    - "Derate voltage by 20% minimum"
+
+transistor:
+  mistakes:
+    - mistake: "No base resistor"
+      consequence: "Destroyed transistor or GPIO"
+      severity: "high"
+      explanation: "Base-emitter junction is a diode - will draw excessive current without limit."
+      fix: "Calculate Rb = (Vin - 0.7) / Ib"
+
+    - mistake: "Wrong pinout (EBC vs BCE)"
+      consequence: "Circuit doesn't work or transistor damaged"
+      severity: "medium"
+      explanation: "Different packages have different pinouts."
+      fix: "Always check datasheet for specific part"
+
+    - mistake: "No flyback diode with inductive load"
+      consequence: "Transistor destroyed by back-EMF"
+      severity: "high"
+      fix: "Add reverse diode across relay/motor coil"
+
+  prevention:
+    - "Always use base resistor"
+    - "Verify pinout from datasheet"
+    - "Add flyback diode for any inductive load"
+    - "Calculate power dissipation"
+
+soldering:
+  mistakes:
+    - mistake: "Cold solder joint"
+      consequence: "Intermittent connection"
+      severity: "medium"
+      explanation: "Joint wasn't hot enough - solder didn't flow properly."
+      fix: "Reheat joint, ensure solder flows to both surfaces"
+      visual: "Good joint is shiny and concave. Cold joint is dull and lumpy."
+
+    - mistake: "Solder bridge between pins"
+      consequence: "Short circuit"
+      severity: "high"
+      fix: "Use solder wick or solder sucker to remove excess"
+
+    - mistake: "Overheating component"
+      consequence: "Damaged component"
+      severity: "medium"
+      fix: "Use heatsink clip, work quickly (2-3 seconds)"
+
+  prevention:
+    - "Use appropriate temperature (350-400°C)"
+    - "Clean tip frequently"
+    - "Heat both surfaces, let solder flow to them"
+    - "Inspect under magnification"

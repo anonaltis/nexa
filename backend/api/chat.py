@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from typing import List, Optional, Any
 from datetime import datetime
 import uuid
+import asyncio
+import traceback
 from auth_utils import get_current_user
 
 router = APIRouter()
@@ -20,6 +22,7 @@ class PollData(BaseModel):
 class ChatMessageRequest(BaseModel):
     content: str
     projectId: Optional[str] = None
+    sessionId: Optional[str] = None  # Optional session ID for persistence
 
 class ChatMessageMetadata(BaseModel):
     type: Optional[str] = None # 'poll', 'question', etc.
@@ -71,82 +74,145 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure Gemini
-GENAI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+# Configure Gemini
+GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 client = None
-if GENAI_API_KEY:
+
+if GENAI_API_KEY == "MOCK":
+    print("Gemini API Key is MOCK. Using Mock Mode.")
+    client = None
+elif GENAI_API_KEY:
     try:
         client = genai.Client(api_key=GENAI_API_KEY)
     except Exception as e:
-        print(f"Failed to initialize Gemini client: {e}")
+        print(f"Failed to initialize Gemini client with GEMINI_API_KEY: {e}")
+elif GOOGLE_API_KEY:
+     try:
+        client = genai.Client(api_key=GOOGLE_API_KEY)
+     except Exception as e:
+        print(f"Failed to initialize Gemini client with GOOGLE_API_KEY: {e}")
+else:
+    print("No API Key found. Using Mock Mode.")
+
+# --- Configuration ---
+MODEL_NAME = "gemini-2.5-flash-lite" 
+
+if GENAI_API_KEY:
+    try:
+        # Version specify karne se 404 ke chances kam ho jate hain
+        client = genai.Client(api_key=GENAI_API_KEY, http_options={'api_version': 'v1'})
+    except Exception as e:
+        print(f"Failed to initialize: {e}")
+
+
+from db import db
+from bson import ObjectId
+
+async def save_message_to_session(session_id: str, user_id: str, message: dict):
+    """Helper to save a message to a chat session"""
+    if not session_id:
+        return
+    try:
+        await db.db["chat_sessions"].update_one(
+            {"_id": ObjectId(session_id), "user_id": user_id},
+            {
+                "$push": {"messages": message},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+    except Exception as e:
+        print(f"Failed to save message to session: {e}")
 
 @router.post("/message", response_model=ChatMessageResponse)
 async def chat_message(request: ChatMessageRequest, current_user: str = Depends(get_current_user)):
-    
+
+    # Save user message to session if sessionId provided
+    if request.sessionId:
+        user_msg = {
+            "id": str(uuid.uuid4()),
+            "role": "user",
+            "content": request.content,
+            "timestamp": datetime.utcnow(),
+            "metadata": None
+        }
+        await save_message_to_session(request.sessionId, current_user, user_msg)
+
     if not client:
-         # Fallback if API key is missing
-         return {
+        import random
+        mock_resp = random.choice(MOCK_RESPONSES)
+
+        response_data = {
             "id": str(uuid.uuid4()),
             "role": "assistant",
-            "content": "⚠️ Gemini API Key is missing. Please add GEMINI_API_KEY to your backend .env file.",
-            "timestamp": datetime.utcnow()
+            "content": mock_resp["content"],
+            "timestamp": datetime.utcnow(),
+            "metadata": mock_resp.get("poll")
         }
 
-    if GENAI_API_KEY:
-        print(f"DEBUG: Using Gemini API Key starting with: {GENAI_API_KEY[:4]}...")
-    
-    import asyncio
-    
-    # Check for explicit MOCK mode
-    if GENAI_API_KEY == "MOCK":
-        await asyncio.sleep(1) # Simulate delay
-        return {
-            "id": str(uuid.uuid4()),
-            "role": "assistant",
-            "content": "🤖 **MOCK MODE**: I am simulating a response because the AI API is disabled.\n\nHere is a sample project plan:\n\n1. Use an ESP32.\n2. Connect a DHT22 sensor.\n3. Write code in C++.\n\n(To enable real AI, update your API Key in backend/.env)",
-            "timestamp": datetime.utcnow()
-        }
+        # Save assistant response to session
+        if request.sessionId:
+            await save_message_to_session(request.sessionId, current_user, response_data)
+
+        return response_data
 
     max_retries = 3
-    base_delay = 2
-    
+    base_delay = 5
+
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model='gemini-2.0-flash-lite-preview-02-05', 
+                model=MODEL_NAME,
                 contents=request.content
             )
-            
-            ai_content = response.text
-            
-            return {
+
+            response_data = {
                 "id": str(uuid.uuid4()),
                 "role": "assistant",
-                "content": ai_content,
+                "content": response.text,
                 "timestamp": datetime.utcnow()
             }
+
+            # Save assistant response to session
+            if request.sessionId:
+                await save_message_to_session(request.sessionId, current_user, response_data)
+
+            return response_data
+
         except Exception as e:
-            is_rate_limit = "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) or "Quota exceeded" in str(e)
-            
-            if is_rate_limit:
+            error_msg = str(e)
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
                 if attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt)
-                    print(f"Rate limit hit. Retrying in {delay}s...")
+                    delay = base_delay * (attempt + 1)
+                    print(f"Quota hit! Attempt {attempt+1} failed. Retrying in {delay}s...")
                     await asyncio.sleep(delay)
                     continue
                 else:
-                    # FALLBACK TO MOCK MODE AFTER RETRIES FAIL
-                    print("⚠️ Quota exhausted. Falling back to Mock Mode.")
-                    return {
+                    response_data = {
                         "id": str(uuid.uuid4()),
                         "role": "assistant",
-                        "content": "⚠️ **Quota Exceeded**: Google's free tier limit has been reached for your IP/Key.\n\nI am switching to **Offline Mode** so you can continue testing the app layout.\n\n(Please wait a few minutes before trying the real AI again.)",
+                        "content": "API quota exceeded. Please try again in a minute.",
                         "timestamp": datetime.utcnow()
                     }
+                    if request.sessionId:
+                        await save_message_to_session(request.sessionId, current_user, response_data)
+                    return response_data
 
-            print(f"Gemini Error: {e}")
-            return {
+            print(f"Error in chat_message: {str(e)}")
+            traceback.print_exc()
+
+            import random
+            mock_resp = random.choice(MOCK_RESPONSES)
+
+            response_data = {
                 "id": str(uuid.uuid4()),
                 "role": "assistant",
-                "content": f"⚠️ AI Error: {str(e)}",
-                "timestamp": datetime.utcnow()
+                "content": mock_resp["content"] + f"\n\n(Note: Showing demo response due to API Error: {error_msg})",
+                "timestamp": datetime.utcnow(),
+                "metadata": mock_resp.get("poll")
             }
+
+            if request.sessionId:
+                await save_message_to_session(request.sessionId, current_user, response_data)
+
+            return response_data

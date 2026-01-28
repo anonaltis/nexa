@@ -1,35 +1,31 @@
-
 import os
 import asyncio
+import time
 from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configure Gemini
 GENAI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-
-if not GENAI_API_KEY:
-    print("❌ No API Key found in .env")
-    exit()
-
-print(f"🔑 Using API Key ending in: ...{GENAI_API_KEY[-5:]}")
-
 client = genai.Client(api_key=GENAI_API_KEY)
 
 async def test_chat():
-    print("🚀 Sending request to Gemini...")
+    print("🚀 Sending request to Gemini (Stable Model)...")
+    # Stable model use karein jis ka quota zyada hota hai
+    model_id = 'gemini-1.5-flash' 
+    
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite-preview-02-05', 
-            contents="Hello! Are you working?"
+            model=model_id, 
+            contents="Hello! Give me a quick electronics tip for ESP32."
         )
         print("\n✅ Response received:")
-        print("-" * 20)
         print(response.text)
-        print("-" * 20)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        if "429" in str(e):
+            print("\n❌ Quota Error: Model busy ya limit full. 10 seconds wait kar ke try karein.")
+        else:
+            print(f"\n❌ Error: {e}")
 
 if __name__ == "__main__":
     asyncio.run(test_chat())
