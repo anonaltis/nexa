@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Mail, MessageSquare, MapPin, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +24,8 @@ const Contact = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     toast({
-      title: "Message Sent!",
-      description: "We'll get back to you as soon as possible.",
+      title: "PROTOCOL_VERIFIED",
+      description: "MESSAGE_STORED_IN_COMMUNICATION_BUFFER",
     });
 
     setFormData({ name: "", email: "", subject: "", message: "" });
@@ -39,157 +38,159 @@ const Contact = () => {
 
   const contactInfo = [
     {
-      icon: Mail,
-      title: "Email",
-      value: "hello@circuitsathi.com",
-      href: "mailto:hello@circuitsathi.com",
+      title: "EMAIL_NODE",
+      value: "HELLO@ELECTROLAB.IO",
+      href: "mailto:hello@electrolab.io",
     },
     {
-      icon: MessageSquare,
-      title: "Support",
-      value: "support@circuitsathi.com",
-      href: "mailto:support@circuitsathi.com",
+      title: "SUPPORT_NODE",
+      value: "SUPPORT@ELECTROLAB.IO",
+      href: "mailto:support@electrolab.io",
     },
     {
-      icon: MapPin,
-      title: "Location",
-      value: "Engineering District, Tech City",
+      title: "GEO_LOCATION",
+      value: "ENGINEERING_DISTRICT_7",
       href: "#",
     },
   ];
 
   return (
     <Layout>
-      {/* Hero */}
-      <section className="py-20">
-        <div className="container max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-            Get in <span className="text-gradient-primary">Touch</span>
+      <div className="container max-w-5xl mx-auto px-4 py-20 space-y-16">
+        {/* Hero Module */}
+        <section className="text-center space-y-6">
+          <div className="inline-flex items-center gap-3 px-3 py-1 rounded bg-primary/5 border border-primary/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-[9px] font-bold font-mono text-primary uppercase tracking-[0.3em]">Comm_Link: Established</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">
+            Access_Transmission
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Have questions, feedback, or just want to say hello? We'd love to hear from you.
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] max-w-xl mx-auto opacity-60">
+            Establish direct link with engineering lead // Query_Buffer_Available
           </p>
-        </div>
-      </section>
+        </section>
 
-      {/* Contact Form & Info */}
-      <section className="py-16 border-t border-border/50">
-        <div className="container max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Contact Info */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
+        {/* Action Grid */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Contact Info Sidebar */}
+          <div className="space-y-8">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="h-0.5 w-4 bg-primary/40" />
+              <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Registry_Info</h2>
+            </div>
+
+            <div className="grid gap-4">
               {contactInfo.map((item) => (
                 <a
                   key={item.title}
                   href={item.href}
-                  className="elevated-card p-4 flex items-start gap-4 hover:border-primary/50 transition-colors"
+                  className="blueprint-card p-6 border-primary/10 bg-primary/[0.02] hover:border-primary/40 transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <item.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground">{item.value}</p>
-                  </div>
+                  <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{item.title}</div>
+                  <div className="text-[11px] font-mono font-bold text-primary group-hover:tracking-wider transition-all">{item.value}</div>
                 </a>
               ))}
-
-              <div className="pt-6">
-                <h3 className="font-semibold mb-3">Office Hours</h3>
-                <p className="text-sm text-muted-foreground">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                <p className="text-sm text-muted-foreground">Saturday - Sunday: Closed</p>
-              </div>
             </div>
 
-            {/* Contact Form */}
-            <div className="md:col-span-2">
-              <div className="floating-card p-8">
-                <h2 className="text-2xl font-bold mb-6">Send us a Message</h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        placeholder="Your name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      placeholder="What's this about?"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      placeholder="Tell us what's on your mind..."
-                      rows={5}
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    variant="neon"
-                    size="lg"
-                    disabled={isSubmitting}
-                    className="w-full sm:w-auto"
-                  >
-                    {isSubmitting ? (
-                      "Sending..."
-                    ) : (
-                      <>
-                        Send Message
-                        <Send className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                </form>
+            <div className="p-6 blueprint-card border-dashed border-primary/20 bg-black/20">
+              <h3 className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Sync_Hours</h3>
+              <div className="space-y-2 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                <div className="flex justify-between">
+                  <span>WK_DAY</span>
+                  <span className="text-primary font-mono">0900-1800</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>WK_END</span>
+                  <span className="text-destructive font-mono">OFFLINE</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* FAQ Teaser */}
-      <section className="py-16 border-t border-border/50">
-        <div className="container max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
-          <p className="text-muted-foreground mb-6">
-            Check out our About page for more information about CircuitSathi's capabilities and features.
-          </p>
+          {/* Form Module */}
+          <div className="lg:col-span-2">
+            <div className="blueprint-card p-0 border-primary/20 overflow-hidden bg-background/50">
+              <div className="bg-primary/10 px-6 py-3 border-b border-primary/20 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Transmission_Injection_Buffer</span>
+                <span className="text-[8px] font-mono text-muted-foreground/40 font-bold uppercase">SIG_AUTH: TRUE</span>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Operator_Identity</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="ENGINEER_NAME"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="bg-primary/5 border-primary/20 h-11 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Access_Identifier (Email)</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="OPERATOR@SYSTEM.CORE"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="bg-primary/5 border-primary/20 h-11 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subject" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Message_Header</Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    placeholder="QUERY_CLASSIFICATION"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    required
+                    className="bg-primary/5 border-primary/20 h-11 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Logic_Payload (Message)</Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    placeholder="INJECT_QUERY_DATA_HERE..."
+                    rows={6}
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    className="bg-primary/5 border-primary/20 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4 py-4 transition-all min-h-[150px]"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-12 w-full md:w-auto md:px-12 bg-primary hover:bg-primary/90 text-[11px] font-bold uppercase tracking-[0.3em] rounded-none border border-primary/20 shadow-[0_4px_20px_rgba(var(--primary-rgb),0.1)]"
+                >
+                  {isSubmitting ? "Transmitting..." : "Initialize_Send"}
+                </Button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* Global Footer Accent */}
+        <div className="flex items-center justify-center pt-12 opacity-20">
+          <div className="h-px w-24 bg-gradient-to-r from-transparent to-primary" />
+          <div className="px-6 text-[8px] font-mono font-black uppercase tracking-[1em]">Secure_Channel</div>
+          <div className="h-px w-24 bg-gradient-to-l from-transparent to-primary" />
         </div>
-      </section>
+      </div>
     </Layout>
   );
 };

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
-import { Database, Loader2, RefreshCw, Package } from "lucide-react";
 import ComponentCard from "@/components/database/ComponentCard";
 import ComponentSearch from "@/components/database/ComponentSearch";
 import ComponentFilters from "@/components/database/ComponentFilters";
@@ -105,17 +104,20 @@ const Components = () => {
 
   const handleSelectComponent = (component: ComponentData) => {
     navigator.clipboard.writeText(component.name);
-    toast.success(`Copied "${component.name}" to clipboard`);
+    toast.success(`COPIED_${component.name.toUpperCase()}_TO_BUFFER`);
   };
 
   if (!user) {
     return (
       <Layout>
-        <div className="py-20 text-center">
-          <Database className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Login to Access Component Database</h1>
-          <Button asChild>
-            <Link to="/login">Login</Link>
+        <div className="container max-w-4xl mx-auto py-32 text-center space-y-8 px-4">
+          <div className="inline-flex items-center justify-center p-6 border-2 border-dashed border-primary/20 bg-primary/5 rounded-full mb-4">
+            <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+          <h1 className="text-4xl font-black uppercase tracking-tighter">Access_Restricted</h1>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em]">AUTHENTICATION_LOG_REQUIRED_FOR_REGISTRY_ACCESS</p>
+          <Button asChild className="h-12 px-12 bg-primary hover:bg-primary/90 text-[10px] font-black uppercase tracking-[0.3em] rounded-none shadow-[0_4px_20px_rgba(var(--primary-rgb),0.2)]">
+            <Link to="/login">Initialize_Login_Protocol</Link>
           </Button>
         </div>
       </Layout>
@@ -124,99 +126,125 @@ const Components = () => {
 
   return (
     <Layout>
-      <div className="py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Database className="w-6 h-6 text-primary" />
-              Component Database
-            </h1>
-            <p className="text-muted-foreground">
-              Browse and search electronic components
+      <div className="container max-w-7xl mx-auto px-4 py-12 space-y-8">
+        {/* Header Module */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 p-6 blueprint-card border-primary/20 bg-primary/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-1 opacity-10">
+            <span className="text-[8px] font-mono font-bold tracking-[0.5em] uppercase">COMPONENT_REGISTRY_v4.1</span>
+          </div>
+          <div className="space-y-1 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <h1 className="text-3xl font-bold tracking-tighter uppercase">Component Registry</h1>
+            </div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em] ml-5">
+              Secure_Database_Access: Standard_Operator_Level_01
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4 relative z-10">
             <Button
               variant="outline"
               size="sm"
               onClick={seedDatabase}
-              className="gap-2"
+              className="h-10 px-6 border-primary/20 hover:bg-primary/10 text-[10px] font-bold uppercase tracking-widest rounded-none hidden md:flex"
             >
-              <RefreshCw className="w-4 h-4" />
-              Seed Database
+              Sync_Registry
             </Button>
+            <div className="h-10 w-px bg-primary/20 hidden md:block" />
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Active_Units</span>
+              <span className="text-xs font-bold text-primary uppercase">{components.length} Items</span>
+            </div>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <ComponentSearch
-            onSearch={handleSearch}
-            placeholder="Search by name, description, or tags..."
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <ComponentFilters
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
-            />
-          </div>
-
-          {/* Components Grid */}
-          <div className="lg:col-span-3">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-muted-foreground">
-                {isLoading ? (
-                  "Loading..."
-                ) : (
-                  <>
-                    Showing {components.length} component
-                    {components.length !== 1 ? "s" : ""}
-                    {selectedCategory && ` in ${selectedCategory}`}
-                    {searchQuery && ` matching "${searchQuery}"`}
-                  </>
-                )}
-              </p>
+        {/* Action Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Filters Sidebar (3/12) */}
+          <div className="lg:col-span-3 space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <span className="h-0.5 w-3 bg-primary/40" />
+                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Logic_Filters</h2>
+              </div>
+              <ComponentFilters
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={handleCategoryChange}
+              />
             </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="blueprint-card p-6 border-primary/20 bg-primary/5 space-y-6">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                System_Metrics
+              </h4>
+              <div className="space-y-4">
+                {[
+                  { label: "LATENCY", val: "12MS" },
+                  { label: "INDEX", val: "EL_CORE_V4" },
+                  { label: "SECURITY", val: "ENCRYPTED" }
+                ].map(spec => (
+                  <div key={spec.label} className="flex justify-between items-center border-b border-primary/5 pb-2">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase">{spec.label}</span>
+                    <span className="text-[10px] font-mono font-bold text-primary">{spec.val}</span>
+                  </div>
+                ))}
               </div>
-            ) : components.length === 0 ? (
-              <div className="text-center py-20 blueprint-card">
-                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Components Found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery || selectedCategory
-                    ? "Try adjusting your search or filters"
-                    : "Click 'Seed Database' to add initial components"}
-                </p>
-                {!searchQuery && !selectedCategory && (
-                  <Button onClick={seedDatabase} className="gap-2">
-                    <RefreshCw className="w-4 h-4" />
-                    Seed Database
-                  </Button>
-                )}
+            </div>
+          </div>
+
+          {/* Main Content (9/12) */}
+          <div className="lg:col-span-9 space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <span className="h-0.5 w-4 bg-primary/40" />
+                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Registry_Query</h2>
               </div>
-            ) : (
-              <ScrollArea className="h-[calc(100vh-300px)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pr-4">
-                  {components.map((component) => (
-                    <ComponentCard
-                      key={component._id}
-                      component={component}
-                      onSelect={handleSelectComponent}
-                    />
-                  ))}
+              <ComponentSearch
+                onSearch={handleSearch}
+                placeholder="QUERY_BY_IDENTIFIER_OR_SPECIFICATION..."
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="h-0.5 w-3 bg-primary/40" />
+                  <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Query_Results</h2>
                 </div>
-              </ScrollArea>
-            )}
+                <span className="text-[8px] font-mono text-primary font-bold uppercase tracking-widest bg-primary/5 px-2 py-0.5 border border-primary/10">BUFFER_AUTO_SYNC: ON</span>
+              </div>
+
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-32 space-y-6 blueprint-card border-primary/10 bg-primary/[0.02]">
+                  <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-primary">Establishing_Database_Uplink...</span>
+                </div>
+              ) : components.length === 0 ? (
+                <div className="text-center py-32 blueprint-card border-dashed border-primary/20 bg-primary/5">
+                  <h3 className="text-xl font-black uppercase tracking-tighter mb-2">Zero_Results_Found</h3>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60 max-w-xs mx-auto mb-8">
+                    The requested identifier does not exist in the current registry buffer.
+                  </p>
+                  <Button onClick={seedDatabase} className="h-10 px-8 bg-primary hover:bg-primary/90 text-[10px] font-black uppercase tracking-widest rounded-none">
+                    Re-Initialize_Registry
+                  </Button>
+                </div>
+              ) : (
+                <ScrollArea className="h-[calc(100vh-450px)]">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pr-4 pb-12">
+                    {components.map((component) => (
+                      <ComponentCard
+                        key={component._id}
+                        component={component}
+                        onSelect={handleSelectComponent}
+                      />
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
           </div>
         </div>
       </div>

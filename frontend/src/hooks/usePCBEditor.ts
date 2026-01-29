@@ -52,8 +52,9 @@ export const usePCBEditor = (
   const [traces, setTraces] = useState<PCBTrace[]>(initialTraces);
   const [vias, setVias] = useState<PCBVia[]>(initialVias);
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
+  const [selectedTrace, setSelectedTrace] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  
+
   const dragState = useRef<DragState>({
     componentId: null,
     startX: 0,
@@ -72,7 +73,7 @@ export const usePCBEditor = (
   // Drag handlers
   const handleDragStart = useCallback((componentId: string, clientX: number, clientY: number, svgX: number, svgY: number) => {
     if (!isEditMode) return;
-    
+
     const component = components.find(c => c.id === componentId);
     if (!component) return;
 
@@ -96,9 +97,9 @@ export const usePCBEditor = (
     const snappedX = Math.round(newX / 10) * 10;
     const snappedY = Math.round(newY / 10) * 10;
 
-    setComponents(prev => 
-      prev.map(c => 
-        c.id === dragState.current.componentId 
+    setComponents(prev =>
+      prev.map(c =>
+        c.id === dragState.current.componentId
           ? { ...c, x: snappedX, y: snappedY }
           : c
       )
@@ -114,13 +115,13 @@ export const usePCBEditor = (
 
   // Update traces when component moves
   const updateTracesForComponent = useCallback((componentId: string, newX: number, newY: number) => {
-    setTraces(prev => 
+    setTraces(prev =>
       prev.map(trace => {
         if (trace.fromPin?.componentId === componentId || trace.toPin?.componentId === componentId) {
           // Recalculate trace points based on new component position
           const component = components.find(c => c.id === componentId);
           if (!component) return trace;
-          
+
           const updatedPoints = [...trace.points];
           if (trace.fromPin?.componentId === componentId && updatedPoints.length > 0) {
             updatedPoints[0] = { x: newX + component.width / 2, y: newY + component.height / 2 };
@@ -138,7 +139,7 @@ export const usePCBEditor = (
   // Trace routing handlers
   const startRouting = useCallback((componentId: string, pinId: string, x: number, y: number) => {
     if (!isEditMode) return;
-    
+
     setRoutingState({
       isRouting: true,
       fromComponent: componentId,
@@ -185,25 +186,28 @@ export const usePCBEditor = (
     });
   }, []);
 
-  // Delete selected component
-  const deleteSelectedComponent = useCallback(() => {
-    if (!selectedComponent) return;
-    
-    setComponents(prev => prev.filter(c => c.id !== selectedComponent));
-    setTraces(prev => prev.filter(t => 
-      t.fromPin?.componentId !== selectedComponent && 
-      t.toPin?.componentId !== selectedComponent
-    ));
-    setSelectedComponent(null);
-  }, [selectedComponent]);
+  // Delete selected component or trace
+  const deleteSelected = useCallback(() => {
+    if (selectedComponent) {
+      setComponents(prev => prev.filter(c => c.id !== selectedComponent));
+      setTraces(prev => prev.filter(t =>
+        t.fromPin?.componentId !== selectedComponent &&
+        t.toPin?.componentId !== selectedComponent
+      ));
+      setSelectedComponent(null);
+    } else if (selectedTrace) {
+      setTraces(prev => prev.filter(t => t.id !== selectedTrace));
+      setSelectedTrace(null);
+    }
+  }, [selectedComponent, selectedTrace]);
 
   // Rotate selected component
   const rotateSelectedComponent = useCallback(() => {
     if (!selectedComponent) return;
-    
-    setComponents(prev => 
-      prev.map(c => 
-        c.id === selectedComponent 
+
+    setComponents(prev =>
+      prev.map(c =>
+        c.id === selectedComponent
           ? { ...c, rotation: ((c.rotation || 0) + 90) % 360 }
           : c
       )
@@ -218,10 +222,10 @@ export const usePCBEditor = (
   // Add new via
   const addVia = useCallback((x: number, y: number) => {
     if (!isEditMode) return;
-    
+
     const snappedX = Math.round(x / 10) * 10;
     const snappedY = Math.round(y / 10) * 10;
-    
+
     setVias(prev => [...prev, { x: snappedX, y: snappedY, size: "small" }]);
   }, [isEditMode]);
 
@@ -230,10 +234,18 @@ export const usePCBEditor = (
     traces,
     vias,
     selectedComponent,
+    selectedTrace,
     isEditMode,
     routingState,
     setIsEditMode,
-    setSelectedComponent,
+    setSelectedComponent: (id: string | null) => {
+      setSelectedComponent(id);
+      if (id) setSelectedTrace(null);
+    },
+    setSelectedTrace: (id: string | null) => {
+      setSelectedTrace(id);
+      if (id) setSelectedComponent(null);
+    },
     handleDragStart,
     handleDragMove,
     handleDragEnd,
@@ -241,11 +253,23 @@ export const usePCBEditor = (
     addRoutingPoint,
     completeRouting,
     cancelRouting,
-    deleteSelectedComponent,
+    deleteSelectedComponent: deleteSelected, // Keep name for compatibility or rename in Viewer
+    deleteSelected,
     rotateSelectedComponent,
     deleteTrace,
     addVia,
+    addComponent: (component: Omit<PCBComponent, "id">) => {
+      if (!isEditMode) return;
+      const newComponent: PCBComponent = {
+        ...component,
+        id: `comp-${Date.now()}`,
+      };
+      setComponents(prev => [...prev, newComponent]);
+      setSelectedComponent(newComponent.id);
+      setSelectedTrace(null);
+    },
     setComponents,
     setTraces,
+    setVias,
   };
 };

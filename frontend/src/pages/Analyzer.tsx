@@ -7,19 +7,16 @@ import FaultDetectionPanel from "@/components/analyzer/FaultDetectionPanel";
 import CorrectionPanel from "@/components/analyzer/CorrectionPanel";
 import LearningNotesPanel from "@/components/analyzer/LearningNotesPanel";
 import { useCircuitHistory, CircuitAnalysis } from "@/hooks/useCircuitHistory";
-<<<<<<< HEAD
 import BodePlot from "@/components/analysis/BodePlot";
 import TruthTable from "@/components/analysis/TruthTable";
 import PowerAnalysis from "@/components/analysis/PowerAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Activity, Zap, Binary, Filter } from "lucide-react";
+import { useCircuitAnalysis } from "@/hooks/useCircuitAnalysis";
 
 // Circuit type configurations
 const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
   rc_filter: {
     name: "RC Filter",
-    icon: Filter,
     bodeData: [
       { frequency: 1, magnitude_db: 0, phase_deg: -0.57 },
       { frequency: 10, magnitude_db: -0.04, phase_deg: -5.71 },
@@ -35,7 +32,6 @@ const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
   },
   digital: {
     name: "Digital Logic",
-    icon: Binary,
     truthTables: {
       AND: {
         gate_type: "AND",
@@ -49,12 +45,6 @@ const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
         inputs: [[0, 0], [0, 1], [1, 0], [1, 1]],
         outputs: [0, 1, 1, 1],
       },
-      NAND: {
-        gate_type: "NAND",
-        num_inputs: 2,
-        inputs: [[0, 0], [0, 1], [1, 0], [1, 1]],
-        outputs: [1, 1, 1, 0],
-      },
       XOR: {
         gate_type: "XOR",
         num_inputs: 2,
@@ -65,7 +55,6 @@ const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
   },
   power_supply: {
     name: "Power Supply",
-    icon: Zap,
     powerData: {
       input_voltage: 12,
       output_voltage: 5,
@@ -82,112 +71,7 @@ const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
   },
 };
 
-// Mock data for OpAmp analysis
-const mockReasoningSteps = [
-  {
-    id: 1,
-    title: "Parse Circuit Topology",
-    explanation: "Identifying components: OpAmp LM358, R1 (1kΩ), R2 (10kΩ). Detected non-inverting amplifier configuration with feedback resistor.",
-    icon: "analyze" as const,
-  },
-  {
-    id: 2,
-    title: "Calculate Gain",
-    explanation: "For non-inverting amplifier: Gain = 1 + (Rf/Rin) = 1 + (10kΩ/1kΩ) = 11. This amplification factor will be applied to input signal.",
-    icon: "calculate" as const,
-  },
-  {
-    id: 3,
-    title: "Apply KVL Analysis",
-    explanation: "Checking voltage loop constraints. With ±5V supply, output swing is limited to approximately ±3.5V due to LM358 output characteristics.",
-    icon: "logic" as const,
-  },
-  {
-    id: 4,
-    title: "Evaluate Output Range",
-    explanation: "With Gain=11 and Vin_max=0.5V, expected Vout_peak = 5.5V. This exceeds supply rail, indicating potential saturation condition.",
-    icon: "insight" as const,
-  },
-];
-
-const mockFaults = [
-  {
-    id: "fault-1",
-    name: "Output Saturation",
-    reason: "Output voltage (5.5V) exceeds the positive supply rail (+5V). The OpAmp will clip at approximately +3.5V.",
-    severity: "high" as const,
-  },
-  {
-    id: "fault-2",
-    name: "Excessive Gain",
-    reason: "Gain of 11 is too high for the given input signal range. Consider reducing R2 or increasing R1.",
-    severity: "medium" as const,
-  },
-  {
-    id: "fault-3",
-    name: "Missing Bypass Capacitor",
-    reason: "No decoupling capacitor detected on power supply pins. May cause oscillation or noise issues.",
-    severity: "low" as const,
-  },
-];
-
-const mockCorrections = [
-  {
-    id: "fix-1",
-    description: "Reduce feedback resistor R2 to limit gain and prevent saturation",
-    originalValue: "R2 = 10kΩ",
-    correctedValue: "R2 = 4.7kΩ",
-  },
-  {
-    id: "fix-2",
-    description: "Add 100nF ceramic bypass capacitors between each supply pin and ground",
-  },
-  {
-    id: "fix-3",
-    description: "Limit input signal amplitude to stay within linear operating region",
-    originalValue: "Vin_max = 0.5V",
-    correctedValue: "Vin_max = 0.3V",
-  },
-];
-
-const mockExpectedOutputs = [
-  { parameter: "Corrected Gain", value: "5.7", unit: "" },
-  { parameter: "Max Output Voltage", value: "1.71", unit: "V" },
-  { parameter: "Bandwidth (-3dB)", value: "175", unit: "kHz" },
-  { parameter: "Slew Rate", value: "0.5", unit: "V/μs" },
-];
-
-const mockLearningNotes = [
-  {
-    id: "note-1",
-    concept: "Non-Inverting Amplifier Gain",
-    explanation: "The gain of a non-inverting amplifier is always greater than 1 and is determined by the ratio of the feedback resistor to the input resistor, plus one.",
-    formula: "Gain = 1 + (Rf / Rin)",
-  },
-  {
-    id: "note-2",
-    concept: "Output Saturation",
-    explanation: "When the calculated output voltage exceeds the supply rails, the OpAmp enters saturation. The actual output will be limited to approximately 1-2V below the supply voltage for most general-purpose OpAmps.",
-  },
-  {
-    id: "note-3",
-    concept: "Power Supply Decoupling",
-    explanation: "Bypass capacitors (typically 100nF ceramic) placed close to the IC power pins filter high-frequency noise and prevent oscillations caused by power supply impedance.",
-    formula: "C_bypass ≈ 100nF (ceramic)",
-  },
-  {
-    id: "note-4",
-    concept: "Gain-Bandwidth Product",
-    explanation: "OpAmps have a constant gain-bandwidth product (GBW). Higher gain means lower bandwidth. For LM358, GBW ≈ 1MHz, so at Gain=11, bandwidth ≈ 90kHz.",
-    formula: "BW = GBW / Gain",
-  },
-];
-=======
-import { useCircuitAnalysis } from "@/hooks/useCircuitAnalysis";
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
-
 const Analyzer = () => {
-  const [currentCircuitInput, setCurrentCircuitInput] = useState("");
   const [detectedCircuitType, setDetectedCircuitType] = useState<string>("opamp");
   const { history, addAnalysis, removeAnalysis, clearHistory } = useCircuitHistory();
   const {
@@ -201,48 +85,16 @@ const Analyzer = () => {
     learningNotes
   } = useCircuitAnalysis();
 
-<<<<<<< HEAD
   const detectCircuitType = (input: string): string => {
     const lowerInput = input.toLowerCase();
-    if (lowerInput.includes("filter") || lowerInput.includes("rc") || lowerInput.includes("capacitor")) {
-      return "rc_filter";
-    }
-    if (lowerInput.includes("logic") || lowerInput.includes("gate") || lowerInput.includes("digital") || lowerInput.includes("and") || lowerInput.includes("or") || lowerInput.includes("nand")) {
-      return "digital";
-    }
-    if (lowerInput.includes("regulator") || lowerInput.includes("power supply") || lowerInput.includes("7805") || lowerInput.includes("ldo")) {
-      return "power_supply";
-    }
+    if (lowerInput.includes("filter") || lowerInput.includes("rc") || lowerInput.includes("capacitor")) return "rc_filter";
+    if (lowerInput.includes("logic") || lowerInput.includes("gate") || lowerInput.includes("digital")) return "digital";
+    if (lowerInput.includes("regulator") || lowerInput.includes("power supply")) return "power_supply";
     return "opamp";
   };
 
-  const handleAnalyze = (input: string) => {
-    console.log("Analyzing circuit:", input);
-    setCurrentCircuitInput(input);
-    setIsAnalyzing(true);
-    setAnalysisComplete(false);
-
-    // Detect circuit type from input
-    const circuitType = detectCircuitType(input);
-    setDetectedCircuitType(circuitType);
-
-    // Simulate analysis delay
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setAnalysisComplete(true);
-
-      // Determine highest severity from mock faults
-      const highestSeverity = mockFaults.reduce((max, fault) => {
-        const order = { low: 0, medium: 1, high: 2 };
-        return order[fault.severity] > order[max] ? fault.severity : max;
-      }, "low" as "low" | "medium" | "high");
-
-      // Save to history
-      addAnalysis(input, mockFaults.length, highestSeverity);
-    }, 2000);
-=======
   const handleAnalyze = async (input: string) => {
-    setCurrentCircuitInput(input);
+    setDetectedCircuitType(detectCircuitType(input));
     try {
       const result = await analyze(input);
       const highestSeverity = result.detected_faults.length > 0 ? "high" : "low" as any;
@@ -250,7 +102,6 @@ const Analyzer = () => {
     } catch (error) {
       console.error("Analysis failed", error);
     }
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
   };
 
   const handleSelectHistory = (analysis: CircuitAnalysis) => {
@@ -262,52 +113,55 @@ const Analyzer = () => {
 
     if (detectedCircuitType === "rc_filter" && config) {
       return (
-        <div className="blueprint-card p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Filter Analysis</h3>
-            <Badge variant="outline" className="ml-auto">RC Low-Pass</Badge>
+        <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
+          <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Signal_Attenuation_Matrix</h3>
+            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">RC_LOW_PASS</span>
           </div>
-          <BodePlot
-            data={config.bodeData}
-            cutoffFrequency={config.cutoffFrequency}
-          />
+          <div className="p-8">
+            <BodePlot data={config.bodeData} cutoffFrequency={config.cutoffFrequency} />
+          </div>
         </div>
       );
     }
 
     if (detectedCircuitType === "digital" && config) {
       return (
-        <div className="blueprint-card p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Binary className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Digital Logic Analysis</h3>
+        <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
+          <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Logic_State_Verification</h3>
+            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">BINARY_ARRAY</span>
           </div>
-          <Tabs defaultValue="AND" className="w-full">
-            <TabsList className="grid grid-cols-4 w-full">
-              {Object.keys(config.truthTables).map((gate) => (
-                <TabsTrigger key={gate} value={gate}>{gate}</TabsTrigger>
+          <div className="p-8">
+            <Tabs defaultValue="AND" className="w-full">
+              <TabsList className="grid grid-cols-3 w-full bg-primary/5 border border-primary/10 p-1 rounded-none">
+                {Object.keys(config.truthTables).map((gate) => (
+                  <TabsTrigger key={gate} value={gate} className="rounded-none text-[9px] font-bold uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    {gate}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {Object.entries(config.truthTables).map(([gate, data]) => (
+                <TabsContent key={gate} value={gate} className="mt-6">
+                  <TruthTable data={data as any} />
+                </TabsContent>
               ))}
-            </TabsList>
-            {Object.entries(config.truthTables).map(([gate, data]) => (
-              <TabsContent key={gate} value={gate}>
-                <TruthTable data={data as any} />
-              </TabsContent>
-            ))}
-          </Tabs>
+            </Tabs>
+          </div>
         </div>
       );
     }
 
     if (detectedCircuitType === "power_supply" && config) {
       return (
-        <div className="blueprint-card p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Power Supply Analysis</h3>
-            <Badge variant="outline" className="ml-auto">Linear Regulator</Badge>
+        <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
+          <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Power_Thermal_Metrics</h3>
+            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">LINEAR_REG</span>
           </div>
-          <PowerAnalysis data={config.powerData} />
+          <div className="p-8">
+            <PowerAnalysis data={config.powerData} />
+          </div>
         </div>
       );
     }
@@ -317,78 +171,107 @@ const Analyzer = () => {
 
   return (
     <Layout>
-      <div className="container max-w-5xl mx-auto px-4 py-12 space-y-8">
-        {/* Page Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            <span className="text-gradient-primary">Circuit Analyzer</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Describe your circuit and let AI analyze it step-by-step
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
-            <Activity className="w-4 h-4" />
-            Supports: OpAmps, Filters, Digital Logic, Power Supplies
+      <div className="container max-w-6xl mx-auto px-4 py-12 space-y-8">
+        {/* Header Module */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 blueprint-card border-primary/20 bg-primary/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-1 opacity-10">
+            <span className="text-[8px] font-mono font-bold tracking-[0.5em] uppercase">SYSTEM_ANALYZER_CORE</span>
+          </div>
+          <div className="space-y-1 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <h1 className="text-3xl font-bold tracking-tighter uppercase">Logic Processor</h1>
+            </div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em] ml-5">
+              System Initialization: Circuit Synthesis Environment
+            </p>
+          </div>
+          <div className="flex items-center gap-6 relative z-10">
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Global Status</span>
+              <span className="text-xs font-bold text-success uppercase">Active / Sync_Ready</span>
+            </div>
+            <div className="h-10 w-px bg-primary/20" />
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Buffer_Load</span>
+              <span className="text-xs font-bold text-primary uppercase">{history.length} Units</span>
+            </div>
           </div>
         </div>
 
-        {/* Circuit History */}
-        <CircuitHistoryPanel
-          history={history}
-          onSelect={handleSelectHistory}
-          onRemove={removeAnalysis}
-          onClear={clearHistory}
-        />
-
-        {/* Circuit Input */}
-        <CircuitInputPanel onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
-
-        {/* Analysis Results */}
-        {analysisComplete && (
-          <>
-            <div className="subtle-divider my-8" />
-<<<<<<< HEAD
-
-            {/* Circuit Type Badge */}
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Badge variant="secondary" className="text-sm px-4 py-1">
-                Detected: {CIRCUIT_ANALYSIS_CONFIGS[detectedCircuitType]?.name || "OpAmp Circuit"}
-              </Badge>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Main Content (9/12) */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <span className="h-0.5 w-4 bg-primary/40" />
+                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Synthesis_Injection</h2>
+              </div>
+              <CircuitInputPanel onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
             </div>
 
-            {/* Type-specific Analysis */}
-            {renderCircuitTypeAnalysis()}
+            {analysisComplete && (
+              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pt-8 border-t border-primary/10">
+                <div className="flex items-center justify-center">
+                  <div className="h-px w-8 bg-primary/40" />
+                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.5em] px-4">Analysis_Payload</span>
+                  <div className="h-px w-8 bg-primary/40" />
+                </div>
 
-            <ReasoningPanel steps={mockReasoningSteps} isVisible={analysisComplete} />
+                {renderCircuitTypeAnalysis()}
 
-            <div className="subtle-divider my-8" />
+                <div className="grid gap-8">
+                  <ReasoningPanel steps={reasoningSteps} isVisible={analysisComplete} />
+                  <FaultDetectionPanel faults={faults} isVisible={analysisComplete} />
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <CorrectionPanel
+                      corrections={corrections}
+                      expectedOutputs={expectedOutputs}
+                      isVisible={analysisComplete}
+                    />
+                    <LearningNotesPanel notes={learningNotes} isVisible={analysisComplete} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-            <FaultDetectionPanel faults={mockFaults} isVisible={analysisComplete} />
+          {/* Sidebar (3/12) */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <span className="h-0.5 w-3 bg-primary/40" />
+                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Logic_Buffers</h2>
+              </div>
+              <CircuitHistoryPanel
+                history={history}
+                onSelect={handleSelectHistory}
+                onRemove={removeAnalysis}
+                onClear={clearHistory}
+              />
+            </div>
 
-            <div className="subtle-divider my-8" />
-
-=======
-            <ReasoningPanel steps={reasoningSteps} isVisible={analysisComplete} />
-            <div className="subtle-divider my-8" />
-            <FaultDetectionPanel faults={faults} isVisible={analysisComplete} />
-            <div className="subtle-divider my-8" />
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
-            <CorrectionPanel
-              corrections={corrections}
-              expectedOutputs={expectedOutputs}
-              isVisible={analysisComplete}
-            />
-<<<<<<< HEAD
-
-            <div className="subtle-divider my-8" />
-
-            <LearningNotesPanel notes={mockLearningNotes} isVisible={analysisComplete} />
-=======
-            <div className="subtle-divider my-8" />
-            <LearningNotesPanel notes={learningNotes} isVisible={analysisComplete} />
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
-          </>
-        )}
+            <div className="blueprint-card p-6 border-primary/20 bg-primary/5 space-y-6">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                System_Specs
+              </h4>
+              <div className="space-y-4">
+                {[
+                  { label: "PRECISION", val: "99.9%" },
+                  { label: "LATENCY", val: "24MS" },
+                  { label: "NODES", val: "DISTRIBUTED" },
+                  { label: "KERNEL", val: "NEXA_V2" }
+                ].map(spec => (
+                  <div key={spec.label} className="flex justify-between items-center border-b border-primary/5 pb-2">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase">{spec.label}</span>
+                    <span className="text-[10px] font-mono font-bold text-primary">{spec.val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Layout>
   );

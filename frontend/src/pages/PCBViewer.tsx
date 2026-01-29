@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useProjectContext } from "@/contexts/ProjectContext";
 import {
   Download,
   Layers,
@@ -12,7 +13,12 @@ import {
   Printer,
   Share2,
   Cpu,
-  List,
+  Info,
+  Box,
+  Plus,
+  Save,
+  Loader2,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   Select,
@@ -21,10 +27,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-<<<<<<< HEAD
-import { ScrollArea } from "@/components/ui/scroll-area";
-import PCBRenderer from "@/components/pcb/PCBRenderer";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import InteractivePCBRenderer from "@/components/pcb/InteractivePCBRenderer";
+import PCBEditorToolbar from "@/components/pcb/PCBEditorToolbar";
 import PCBGenerationDialog from "@/components/pcb/PCBGenerationDialog";
+import { usePCBEditor, PCBComponent, PCBTrace, PCBVia } from "@/hooks/usePCBEditor";
+import { usePCBHistory } from "@/hooks/usePCBHistory";
+import { toast } from "@/hooks/use-toast";
 
 interface BOMItem {
   reference: string;
@@ -45,17 +58,6 @@ const defaultPCB: GeneratedPCB = {
   svg: "",
   bom: [],
 };
-=======
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import InteractivePCBRenderer from "@/components/pcb/InteractivePCBRenderer";
-import PCBEditorToolbar from "@/components/pcb/PCBEditorToolbar";
-import { usePCBEditor, PCBComponent, PCBTrace, PCBVia } from "@/hooks/usePCBEditor";
-import { usePCBHistory } from "@/hooks/usePCBHistory";
-import { toast } from "@/hooks/use-toast";
 
 // Default demo circuit - Smart Sensor Hub
 const defaultComponents: PCBComponent[] = [
@@ -114,79 +116,45 @@ const defaultVias: PCBVia[] = [
   { x: 160, y: 260, size: "small" },
   { x: 310, y: 180, size: "small" },
 ];
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
+
+const libraryComponents = [
+  { type: "chip", width: 80, height: 80, label: "MCU", sublabel: "ATMega328" },
+  { type: "ic", width: 60, height: 30, label: "OPAMP", sublabel: "LM358" },
+  { type: "resistor", width: 30, height: 10, label: "RES", sublabel: "10k" },
+  { type: "capacitor", width: 15, height: 25, label: "CAP", sublabel: "10uF" },
+  { type: "led", width: 10, height: 10, label: "LED", sublabel: "Red" },
+  { type: "transistor", width: 12, height: 12, label: "Q", sublabel: "2N2222" },
+  { type: "crystal", width: 25, height: 12, label: "XTAL", sublabel: "16MHz" },
+  { type: "connector", width: 80, height: 50, label: "USB", sublabel: "Type-C" },
+];
 
 const PCBViewer = () => {
   const { user } = useAuth();
-  const [generatedPCB, setGeneratedPCB] = useState<GeneratedPCB>(defaultPCB);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectId = searchParams.get("project");
+  const { getProject, updateProject, projects } = useProjectContext();
+  const [zoom] = useState(100);
+  const [isSaving, setIsSaving] = useState(false);
+  const [, setGeneratedPCB] = useState<GeneratedPCB>(defaultPCB);
   const [showLayers, setShowLayers] = useState({
     top: true,
     bottom: true,
     silkscreen: true,
     traces: true,
   });
+  const [focusedLayer, setFocusedLayer] = useState<string>("all");
 
-<<<<<<< HEAD
-  const handlePCBGenerated = (pcb: GeneratedPCB) => {
-    setGeneratedPCB(pcb);
-  };
-
-  const handleDownloadSVG = () => {
-    if (!generatedPCB.svg) return;
-    const blob = new Blob([generatedPCB.svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "pcb_design.svg";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadBOM = () => {
-    if (!generatedPCB.bom.length) return;
-    const csv = [
-      "Reference,Name,Package,Quantity",
-      ...generatedPCB.bom.map(
-        (item) => `${item.reference},${item.name},${item.package},${item.quantity}`
-      ),
-    ].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "bill_of_materials.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handlePrint = () => {
-    if (!generatedPCB.svg) return;
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head><title>PCB Design - Print</title></head>
-          <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
-            ${generatedPCB.svg}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-=======
   const {
     components,
     traces,
     vias,
     selectedComponent,
+    selectedTrace,
     isEditMode,
     routingState,
     setIsEditMode,
     setSelectedComponent,
+    setSelectedTrace,
     handleDragStart,
     handleDragMove,
     handleDragEnd,
@@ -196,28 +164,78 @@ const PCBViewer = () => {
     cancelRouting,
     deleteSelectedComponent,
     rotateSelectedComponent,
+    addComponent,
     setComponents,
     setTraces,
-  } = usePCBEditor(defaultComponents, defaultTraces, defaultVias);
+    setVias,
+  } = usePCBEditor([], [], []);
 
-  // Undo/Redo history
+  const handleSaveDesign = async () => {
+    if (!projectId) {
+      toast({ title: "No Project Selected", description: "Design changes are only saved to specific projects.", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateProject(projectId, {
+        status: "designing",
+        pcbDiagram: {
+          id: `pcb-${projectId}`,
+          projectId,
+          svgData: "",
+          width: 450,
+          height: 500,
+          layers: [],
+          components,
+          connections: traces as any,
+          vias,
+        } as any
+      });
+      toast({ title: "Design Saved", description: "PCB layout has been persisted to the cloud." });
+    } catch (error) {
+      console.error("Save failed:", error);
+      toast({ title: "Save Failed", description: "Could not save design to the cloud.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (projectId) {
+      const project = getProject(projectId);
+      if (project && project.pcbDiagram) {
+        const { components: pcbComps, connections: pcbTraces, vias: pcbVias } = project.pcbDiagram as any;
+        if (pcbComps) setComponents(pcbComps);
+        if (pcbTraces) setTraces(pcbTraces);
+        if (pcbVias) setVias(pcbVias);
+      } else {
+        setComponents(defaultComponents);
+        setTraces(defaultTraces);
+        setVias(defaultVias);
+      }
+    } else {
+      setComponents(defaultComponents);
+      setTraces(defaultTraces);
+      setVias(defaultVias);
+    }
+  }, [projectId, getProject, setComponents, setTraces, setVias]);
+
   const {
     pushState,
     undo,
     redo,
     canUndo,
     canRedo,
-  } = usePCBHistory({ components: defaultComponents, traces: defaultTraces, vias: defaultVias });
+  } = usePCBHistory({ components, traces, vias });
 
-  // Track last state for change detection
   const lastStateRef = useRef({ components, traces, vias });
 
-  // Push state to history when components or traces change
   useEffect(() => {
-    const hasChanged = 
+    const hasChanged =
       JSON.stringify(components) !== JSON.stringify(lastStateRef.current.components) ||
       JSON.stringify(traces) !== JSON.stringify(lastStateRef.current.traces);
-    
+
     if (hasChanged && isEditMode) {
       lastStateRef.current = { components, traces, vias };
       pushState({ components, traces, vias });
@@ -229,20 +247,21 @@ const PCBViewer = () => {
     if (prevState) {
       setComponents(prevState.components);
       setTraces(prevState.traces);
+      setVias(prevState.vias || []);
       toast({ title: "Undo", description: "Reverted to previous state" });
     }
-  }, [undo, setComponents, setTraces]);
+  }, [undo, setComponents, setTraces, setVias]);
 
   const handleRedo = useCallback(() => {
     const nextState = redo();
     if (nextState) {
       setComponents(nextState.components);
       setTraces(nextState.traces);
+      setVias(nextState.vias || []);
       toast({ title: "Redo", description: "Restored next state" });
     }
-  }, [redo, setComponents, setTraces]);
+  }, [redo, setComponents, setTraces, setVias]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -250,20 +269,19 @@ const PCBViewer = () => {
           cancelRouting();
         } else {
           setSelectedComponent(null);
+          setSelectedTrace(null);
         }
       }
-      if (e.key === "Delete" && selectedComponent) {
+      if (e.key === "Delete" && (selectedComponent || selectedTrace)) {
         deleteSelectedComponent();
       }
       if (e.key === "r" && selectedComponent && isEditMode) {
         rotateSelectedComponent();
       }
-      // Undo: Ctrl+Z
       if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey && isEditMode) {
         e.preventDefault();
         handleUndo();
       }
-      // Redo: Ctrl+Shift+Z or Ctrl+Y
       if ((e.ctrlKey || e.metaKey) && (e.key === "Z" || e.key === "y") && isEditMode) {
         e.preventDefault();
         handleRedo();
@@ -272,14 +290,53 @@ const PCBViewer = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [routingState.isRouting, selectedComponent, isEditMode, cancelRouting, deleteSelectedComponent, rotateSelectedComponent, setSelectedComponent, handleUndo, handleRedo]);
+  }, [routingState.isRouting, selectedComponent, selectedTrace, isEditMode, cancelRouting, deleteSelectedComponent, rotateSelectedComponent, setSelectedComponent, setSelectedTrace, handleUndo, handleRedo]);
+
+  const handlePCBGenerated = (pcb: GeneratedPCB) => {
+    setGeneratedPCB(pcb);
+    if (pcb.pcb_data?.components) {
+      setComponents(pcb.pcb_data.components);
+    }
+  };
+
+  const handleDownloadSVG = () => {
+    const svgElement = document.querySelector('.pcb-container svg');
+    if (svgElement) {
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pcb-diagram-${projectId || 'demo'}.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handlePrint = () => {
+    const svgElement = document.querySelector('.pcb-container svg');
+    if (svgElement) {
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head><title>PCB Design - Print</title></head>
+            <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+              ${svgData}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    }
+  };
 
   const handlePinClick = useCallback((componentId: string, pinId: string, x: number, y: number) => {
     if (!routingState.isRouting) {
-      // Start routing
       startRouting(componentId, pinId, x, y);
     } else {
-      // Complete routing
       completeRouting(componentId, pinId, x, y);
     }
   }, [routingState.isRouting, startRouting, completeRouting]);
@@ -290,27 +347,53 @@ const PCBViewer = () => {
     }
   }, [routingState.isRouting, addRoutingPoint]);
 
-  const handleDownload = () => {
-    const svgElement = document.querySelector('.pcb-container svg');
-    if (svgElement) {
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const blob = new Blob([svgData], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pcb-diagram-${selectedProject}.svg`;
-      a.click();
-      URL.revokeObjectURL(url);
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
+  const handleLibraryItemDragStart = (e: React.DragEvent, item: any) => {
+    if (!isEditMode) {
+      e.preventDefault();
+      toast({ title: "Edit Mode Required", description: "Please enter edit mode to add components", variant: "destructive" });
+      return;
     }
+    e.dataTransfer.setData("application/json", JSON.stringify(item));
+    e.dataTransfer.effectAllowed = "copy";
   };
+
+  const handleDropOnCanvas = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isEditMode) return;
+
+    try {
+      const data = e.dataTransfer.getData("application/json");
+      if (!data) return;
+      const item = JSON.parse(data);
+
+      const svgContainer = e.currentTarget;
+      const rect = svgContainer.getBoundingClientRect();
+
+      const x = (e.clientX - rect.left) * (450 / rect.width);
+      const y = (e.clientY - rect.top) * (500 / rect.height);
+
+      const snappedX = Math.round(x / 10) * 10;
+      const snappedY = Math.round(y / 10) * 10;
+
+      addComponent({
+        ...item,
+        x: snappedX - item.width / 2,
+        y: snappedY - item.height / 2,
+        pins: [],
+      });
+
+      toast({ title: "Component Added", description: `Added ${item.label} to the PCB` });
+    } catch (err) {
+      console.error("Failed to drop component:", err);
+    }
+  }, [isEditMode, addComponent]);
 
   if (!user) {
     return (
       <Layout>
         <div className="py-20 text-center">
-          <Cpu className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Login to View PCB Diagrams</h1>
+          <h1 className="text-2xl font-bold mb-4 uppercase tracking-tighter">Login Required</h1>
+          <p className="text-muted-foreground mb-8">Please log in to view and edit PCB diagrams</p>
           <Button asChild>
             <Link to="/login">Login</Link>
           </Button>
@@ -319,38 +402,58 @@ const PCBViewer = () => {
     );
   }
 
+  const currentProject = projectId ? getProject(projectId) : null;
+
   return (
     <Layout>
-      <div className="py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">PCB Viewer</h1>
-            <p className="text-muted-foreground">
-              AI-powered PCB layout generation
+      <div className="py-6 space-y-6">
+        {/* Header Module */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 blueprint-card border-primary/20 bg-primary/5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <h1 className="text-3xl font-bold tracking-tighter uppercase">PCB Control Center</h1>
+            </div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.4em] ml-5">
+              {currentProject ? `Active Session: ${currentProject.name}` : "System Initialized: AI Layout Engine"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Select defaultValue="project-1">
-              <SelectTrigger className="w-48 bg-input border-border">
-                <SelectValue placeholder="Select project" />
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end mr-4">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Global Status</span>
+              <span className="text-xs font-bold text-primary uppercase">Connected / Online</span>
+            </div>
+            <Select
+              value={projectId || "demo"}
+              onValueChange={(val) => {
+                if (val === "demo") {
+                  setSearchParams({});
+                } else {
+                  setSearchParams({ project: val });
+                }
+              }}
+            >
+              <SelectTrigger className="w-56 bg-background/50 border-primary/30 font-bold text-[10px] uppercase tracking-widest h-10">
+                <SelectValue placeholder="Project Selection" />
               </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                <SelectItem value="project-1">Current Project</SelectItem>
+              <SelectContent className="bg-card border-primary/30">
+                <SelectItem value="demo" className="text-[10px] font-bold uppercase">Demo Module</SelectItem>
+                {projects.map(p => (
+                  <SelectItem key={p.id} value={p.id} className="text-[10px] font-bold uppercase">{p.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <PCBGenerationDialog onPCBGenerated={handlePCBGenerated} />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* PCB Canvas */}
-          <div className="lg:col-span-3">
-            {/* Editor Toolbar */}
-            <div className="mb-3">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Workspace (9/12) */}
+          <div className="lg:col-span-9 space-y-4">
+            <div className="flex items-center justify-between px-2">
               <PCBEditorToolbar
                 isEditMode={isEditMode}
-                selectedComponent={selectedComponent}
+                selectedComponent={selectedComponent || selectedTrace}
                 isRouting={routingState.isRouting}
                 canUndo={canUndo}
                 canRedo={canRedo}
@@ -361,267 +464,267 @@ const PCBViewer = () => {
                 onRotate={rotateSelectedComponent}
                 onCancelRouting={cancelRouting}
               />
-            </div>
-
-            <div className="blueprint-card overflow-hidden">
-              {/* Toolbar */}
-              <div className="flex items-center justify-between p-3 border-b border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  {generatedPCB.pcb_data?.board && (
-                    <span>
-                      Board: {generatedPCB.pcb_data.board.width}mm x{" "}
-                      {generatedPCB.pcb_data.board.height}mm
-                    </span>
-                  )}
+              <div className="hidden md:flex items-center gap-6 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  Grid: 10mm
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2"
-                    disabled={!generatedPCB.svg}
-                  >
-                    <Share2 className="w-4 h-4" />
-                    Share
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2"
-                    onClick={handlePrint}
-                    disabled={!generatedPCB.svg}
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print
-                  </Button>
-                  <Button
-                    className="bg-primary hover:bg-primary/90 gap-2"
-                    size="sm"
-                    onClick={handleDownloadSVG}
-                    disabled={!generatedPCB.svg}
-                  >
-                    <Download className="w-4 h-4" />
-                    Download SVG
-                  </Button>
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  Snap: Enabled
                 </div>
               </div>
+            </div>
 
-              {/* PCB View */}
-<<<<<<< HEAD
-              <div className="aspect-[4/3] bg-[#0a1628]">
-                <PCBRenderer svg={generatedPCB.svg} className="w-full h-full" />
-=======
-              <div 
-                className="pcb-container aspect-[4/3] flex items-center justify-center overflow-auto p-4"
-                style={{ backgroundColor: "hsl(var(--pcb-background))" }}
-              >
+            <div className="relative group">
+              {/* Corner Accents */}
+              <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary z-10" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-primary z-10" />
+              <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-primary z-10" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-primary z-10" />
+
+              <div className="blueprint-card overflow-hidden bg-pcb-background ring-1 ring-primary/20 shadow-2xl">
+                <div className="flex items-center justify-between p-4 border-b border-primary/20 bg-primary/5">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Board Dimensions</span>
+                      <span className="text-xs font-bold text-primary uppercase">100.00MM × 80.00MM</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      className="bg-primary hover:bg-primary/90 text-[10px] font-bold uppercase tracking-widest h-8 px-4"
+                      size="sm"
+                      onClick={handleSaveDesign}
+                      disabled={isSaving || !projectId}
+                    >
+                      {isSaving ? "Syncing..." : "Commit Design"}
+                    </Button>
+                    <div className="flex border border-primary/20 rounded-md overflow-hidden h-8">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-none border-r border-primary/20 text-[9px] font-bold uppercase tracking-widest hover:bg-primary/10"
+                        onClick={handlePrint}
+                      >
+                        Print
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-none text-[9px] font-bold uppercase tracking-widest hover:bg-primary/10"
+                        onClick={handleDownloadSVG}
+                      >
+                        Export SVG
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 <div
-                  style={{ 
-                    transform: `scale(${zoom / 100})`, 
-                    transformOrigin: 'center',
-                    transition: 'transform 0.2s ease-out'
+                  className="pcb-container aspect-[16/10] flex items-center justify-center overflow-auto p-8 relative"
+                  style={{ backgroundColor: "hsl(var(--pcb-background))" }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (isEditMode) e.dataTransfer.dropEffect = "copy";
                   }}
+                  onDrop={handleDropOnCanvas}
                 >
-                  <InteractivePCBRenderer
-                    components={components}
-                    traces={traces}
-                    vias={vias}
-                    layers={showLayers}
-                    showGrid={true}
-                    showLabels={showLayers.silkscreen}
-                    isEditMode={isEditMode}
-                    selectedComponent={selectedComponent}
-                    routingState={routingState}
-                    onDragStart={handleDragStart}
-                    onDragMove={handleDragMove}
-                    onDragEnd={handleDragEnd}
-                    onPinClick={handlePinClick}
-                    onCanvasClick={handleCanvasClick}
-                    onComponentSelect={setSelectedComponent}
-                  />
+                  {/* Decorative Scanlines */}
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
+
+                  <div
+                    style={{
+                      transform: `scale(${zoom / 100})`,
+                      transformOrigin: 'center',
+                      transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                    className="relative z-1"
+                  >
+                    <InteractivePCBRenderer
+                      components={components}
+                      traces={traces}
+                      vias={vias}
+                      layers={showLayers}
+                      showGrid={true}
+                      showLabels={showLayers.silkscreen}
+                      isEditMode={isEditMode}
+                      selectedComponent={selectedComponent}
+                      selectedTrace={selectedTrace}
+                      routingState={routingState}
+                      onDragStart={handleDragStart}
+                      onDragMove={handleDragMove}
+                      onDragEnd={handleDragEnd}
+                      onPinClick={handlePinClick}
+                      onCanvasClick={handleCanvasClick}
+                      onComponentSelect={setSelectedComponent}
+                      onTraceSelect={setSelectedTrace}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* PCB Info Bar */}
-            <div className="mt-4 p-4 blueprint-card flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Board Size:</span>
-                  <span className="font-mono">100mm × 80mm</span>
+            {/* Enhanced Status Console */}
+            <div className="p-4 blueprint-card border-primary/10 bg-black/40 flex flex-col md:flex-row items-center justify-between text-[10px] uppercase font-bold tracking-widest gap-4">
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground mb-0.5">Physical Metrics</span>
+                  <span className="text-primary font-mono tabular-nums">100X80MM / 2-LAYER</span>
                 </div>
-                <div className="w-px h-4 bg-border" />
-                <div>
-                  <span className="text-muted-foreground">Layers:</span>
-                  <span className="font-mono ml-2">2-layer</span>
+                <div className="h-4 w-px bg-primary/20" />
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground mb-0.5">Asset Count</span>
+                  <span className="text-primary font-mono tabular-nums">COMP:{components.length} / TRACE:{traces.length}</span>
                 </div>
-                <div className="w-px h-4 bg-border" />
-                <div>
-                  <span className="text-muted-foreground">Components:</span>
-                  <span className="font-mono ml-2">{components.length}</span>
-                </div>
-                <div className="w-px h-4 bg-border" />
-                <div>
-                  <span className="text-muted-foreground">Traces:</span>
-                  <span className="font-mono ml-2">{traces.length}</span>
+                <div className="h-4 w-px bg-primary/20" />
+                <div className="flex flex-col">
+                  <span className="text-muted-foreground mb-0.5">System Load</span>
+                  <span className="text-success font-mono tabular-nums">OPTIMAL (14ms)</span>
                 </div>
               </div>
-              <div className="text-muted-foreground text-xs">
-                ElectroLab v1.0 • {isEditMode ? "Editing" : "Ready for manufacturing"}
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
+              <div className="text-primary/70 animate-pulse bg-primary/5 px-3 py-1.5 rounded border border-primary/20">
+                SYSTEM: {isEditMode ? "WRITE ACCESS ENABLED" : "READY FOR ANALYSIS"}
               </div>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Layers Panel */}
-            <div className="blueprint-card p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-primary" />
-                Layers
-              </h3>
-              <div className="space-y-2">
+          {/* Sidebar Modules (3/12) */}
+          <div className="lg:col-span-3 space-y-6">
+            <div className="blueprint-card p-0 overflow-hidden border-primary/20">
+              <div className="bg-primary/10 px-4 py-2 border-b border-primary/20">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Component Library</h3>
+              </div>
+              <div className="p-4">
+                <p className="text-[9px] text-muted-foreground mb-4 uppercase font-bold leading-tight">
+                  {isEditMode ? "Drag modules onto physical surface" : "Access locked: enter edit mode"}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {libraryComponents.map((item, idx) => (
+                    <div
+                      key={idx}
+                      draggable={isEditMode}
+                      onDragStart={(e) => handleLibraryItemDragStart(e, item)}
+                      className={`group flex flex-col items-center justify-center p-3 rounded border border-primary/10 transition-all duration-300 bg-primary/5 shadow-inner ${isEditMode
+                        ? 'cursor-grab active:cursor-grabbing hover:border-primary/50 hover:bg-primary/10 hover:shadow-primary/5'
+                        : 'opacity-50 cursor-not-allowed'
+                        }`}
+                    >
+                      <div className="w-full text-center py-1.5 mb-2 bg-black/40 rounded text-[7px] font-bold uppercase tracking-widest text-primary group-hover:bg-primary/20 transition-colors">
+                        {item.type}
+                      </div>
+                      <span className="text-[10px] font-bold tracking-tight text-foreground">{item.label}</span>
+                      <span className="text-[8px] text-muted-foreground/70 uppercase font-bold">{item.sublabel}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="blueprint-card p-0 overflow-hidden border-primary/20">
+              <div className="bg-primary/10 px-4 py-2 border-b border-primary/20">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Sensor Overlay</h3>
+              </div>
+              <div className="p-4 space-y-1">
                 {Object.entries(showLayers).map(([layer, visible]) => (
                   <button
                     key={layer}
                     onClick={() =>
                       setShowLayers({ ...showLayers, [layer]: !visible })
                     }
-                    className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="w-full flex items-center justify-between p-2.5 rounded hover:bg-primary/10 transition-all duration-200 group"
                   >
-                    <span className="text-sm capitalize">{layer}</span>
-                    {visible ? (
-                      <Eye className="w-4 h-4 text-primary" />
-                    ) : (
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
-                    )}
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground group-hover:text-primary">{layer}</span>
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${visible ? 'text-primary border-primary/40 bg-primary/5' : 'text-muted-foreground/30 border-transparent'}`}>
+                      {visible ? 'Active' : 'Muted'}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Components List / BOM */}
-            <div className="blueprint-card p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-<<<<<<< HEAD
-                <List className="w-4 h-4 text-primary" />
-                Components ({generatedPCB.bom.length})
-              </h3>
-              <ScrollArea className="h-[200px]">
-                {generatedPCB.bom.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Generate a PCB to see components
-                  </p>
-                ) : (
-                  <div className="space-y-2 text-sm">
-                    {generatedPCB.bom.map((item, idx) => (
-                      <div key={idx} className="flex justify-between p-2 rounded bg-muted/30">
-                        <div>
-                          <span className="text-muted-foreground">
-                            {item.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            ({item.package})
-                          </span>
-                        </div>
-                        <span className="font-mono text-primary">
-                          {item.reference}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-=======
-                <Cpu className="w-4 h-4 text-primary" />
-                Components ({components.length})
-              </h3>
-              <div className="space-y-1 text-sm max-h-48 overflow-y-auto">
+            <div className="blueprint-card p-0 overflow-hidden border-primary/20">
+              <div className="bg-primary/10 px-4 py-2 border-b border-primary/20">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Isolation Matrix</h3>
+              </div>
+              <div className="p-2 grid grid-cols-2 gap-1">
+                {['all', 'top', 'bottom', 'silkscreen'].map((layer) => (
+                  <Button
+                    key={layer}
+                    variant={focusedLayer === layer ? "default" : "ghost"}
+                    size="sm"
+                    className={`text-[9px] font-bold uppercase tracking-tighter h-8 rounded-sm ${focusedLayer === layer ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
+                    onClick={() => {
+                      setFocusedLayer(layer);
+                      if (layer === 'all') {
+                        setShowLayers({ top: true, bottom: true, silkscreen: true, traces: true });
+                      } else {
+                        setShowLayers({
+                          top: layer === 'top',
+                          bottom: layer === 'bottom',
+                          silkscreen: layer === 'silkscreen',
+                          traces: layer !== 'silkscreen'
+                        });
+                      }
+                    }}
+                  >
+                    {layer}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="blueprint-card p-0 overflow-hidden border-primary/20">
+              <div className="bg-primary/10 px-4 py-2 border-b border-primary/20 flex items-center justify-between">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Asset Map</h3>
+                <span className="text-[8px] font-bold text-primary/70">{components.length} Units</span>
+              </div>
+              <div className="p-2 space-y-1 max-h-56 overflow-y-auto custom-scrollbar">
                 {components.map((comp) => (
                   <button
                     key={comp.id}
                     onClick={() => setSelectedComponent(comp.id)}
-                    className={`w-full flex justify-between items-center p-2 rounded-lg transition-colors cursor-pointer ${
-                      selectedComponent === comp.id 
-                        ? 'bg-primary/20 border border-primary/40' 
-                        : 'hover:bg-muted/30'
-                    }`}
+                    className={`w-full flex justify-between items-center p-2 rounded transition-all duration-200 cursor-pointer uppercase font-bold group ${selectedComponent === comp.id
+                      ? 'bg-primary/20 border border-primary/40'
+                      : 'hover:bg-primary/5'
+                      }`}
                   >
-                    <div>
-                      <span className="text-muted-foreground">{comp.type}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="text-[7px] text-muted-foreground/60 leading-none group-hover:text-primary/70">{comp.type}</span>
+                      <span className="text-[10px] text-foreground tracking-tight">{comp.label}</span>
                     </div>
-                    <span className="font-mono text-xs text-primary">{comp.label}</span>
+                    <span className="font-mono text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">ID:{comp.id.slice(-4)}</span>
                   </button>
                 ))}
               </div>
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
             </div>
 
-            {/* Export Options */}
-            <div className="blueprint-card p-4">
-              <h3 className="text-sm font-semibold mb-3">Export Options</h3>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  size="sm"
-                  onClick={handleDownloadSVG}
-                  disabled={!generatedPCB.svg}
-                >
-                  <FileDown className="w-4 h-4" />
-                  SVG (Vector Image)
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  size="sm"
-                  onClick={handleDownloadBOM}
-                  disabled={!generatedPCB.bom.length}
-                >
-                  <FileDown className="w-4 h-4" />
-                  Bill of Materials (CSV)
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  size="sm"
-                  disabled={true}
-                >
-                  <FileDown className="w-4 h-4" />
-                  Gerber Files (Coming Soon)
-                </Button>
-              </div>
-            </div>
-<<<<<<< HEAD
-=======
-
-            {/* Edit Mode Help */}
             {isEditMode && (
-              <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
-                <h4 className="text-xs font-semibold text-primary mb-2">🎛️ Edit Mode Controls</h4>
-                <ul className="text-xs text-muted-foreground leading-relaxed space-y-1">
-                  <li>• <strong>Drag</strong> components to reposition</li>
-                  <li>• <strong>Click pins</strong> to start routing traces</li>
-                  <li>• <strong>Click canvas</strong> to add routing points</li>
-                  <li>• Press <strong>R</strong> to rotate selected</li>
-                  <li>• Press <strong>Delete</strong> to remove</li>
-                  <li>• Press <strong>Esc</strong> to cancel/deselect</li>
-                </ul>
+              <div className="p-4 rounded border border-primary/30 bg-primary/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-1 opacity-20">
+                  <span className="text-[8px] font-bold uppercase tracking-tighter">Authorized</span>
+                </div>
+                <h4 className="text-[10px] font-bold text-primary mb-3 uppercase tracking-widest flex items-center gap-2">
+                  <span className="h-1 w-1 bg-primary rounded-full animate-ping" />
+                  Edit Protocol
+                </h4>
+                <div className="space-y-3">
+                  {[
+                    "Pull items from library to initialize",
+                    "Translate modules via vector drag",
+                    "Engage pin nodes for trace routing",
+                    "R: Rotate Orientation",
+                    "DEL: Purge Selected Asset",
+                    "ESC: Nullify Current Action"
+                  ].map((text, i) => (
+                    <div key={i} className="flex gap-2 items-start">
+                      <span className="text-primary font-mono text-[8px] mt-0.5">{`0${i + 1}`}</span>
+                      <span className="text-[9px] font-bold text-muted-foreground uppercase leading-tight">{text}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-
-            {/* Manufacturing Info */}
-            {!isEditMode && (
-              <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
-                <h4 className="text-xs font-semibold text-primary mb-2">💡 Manufacturing Ready</h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Export Gerber files and upload to PCB manufacturers like JLCPCB, PCBWay, or OSH Park for professional fabrication.
-                </p>
-              </div>
-            )}
->>>>>>> eb187e8 (Update UI components with functionality &  Changing the Backend from python to Typr Script and its Ai Modle still in the Python)
           </div>
         </div>
       </div>

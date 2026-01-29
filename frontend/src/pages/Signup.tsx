@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Cpu, Eye, EyeOff, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,6 @@ const Signup = () => {
   const { signup } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -22,19 +20,13 @@ const Signup = () => {
     confirmPassword: "",
   });
 
-  const passwordRequirements = [
-    { label: "At least 8 characters", met: formData.password.length >= 8 },
-    { label: "Contains a number", met: /\d/.test(formData.password) },
-    { label: "Contains a letter", met: /[a-zA-Z]/.test(formData.password) },
-  ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
       toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are the same.",
+        title: "PARITY_CHECK_FAILED",
+        description: "SECURITY_TOKENS_DO_NOT_MATCH",
         variant: "destructive",
       });
       return;
@@ -42,8 +34,8 @@ const Signup = () => {
 
     if (!acceptTerms) {
       toast({
-        title: "Terms required",
-        description: "Please accept the terms and conditions.",
+        title: "PROTOCOL_VIOLATION",
+        description: "GOVERNANCE_TERMS_MUST_BE_ACCEPTED",
         variant: "destructive",
       });
       return;
@@ -55,15 +47,15 @@ const Signup = () => {
       const success = await signup(formData.email, formData.password, formData.name);
       if (success) {
         toast({
-          title: "Account created!",
-          description: "Welcome to CircuitSathi.",
+          title: "IDENTITY_SYNTHESIZED",
+          description: "WELCOME_TO_THE_NETWORK",
         });
-        navigate("/analyzer");
+        navigate("/dashboard");
       }
     } catch (error) {
       toast({
-        title: "Signup failed",
-        description: "Something went wrong. Please try again.",
+        title: "INITIALIZATION_FAILED",
+        description: "IDENTITY_BUFFER_ERROR",
         variant: "destructive",
       });
     } finally {
@@ -76,152 +68,123 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Decorative Technical Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
 
-      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-            <div className="relative">
-              <Cpu className="w-10 h-10 text-primary animate-pulse-glow" />
-              <div className="absolute inset-0 w-10 h-10 bg-primary/20 blur-xl rounded-full" />
+      <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-500">
+        <div className="blueprint-card p-0 overflow-hidden border-primary/30 bg-background/80 backdrop-blur-xl shadow-[0_0_50px_rgba(var(--primary-rgb),0.1)]">
+          {/* Header Module */}
+          <div className="bg-primary/10 px-6 py-4 border-b border-primary/20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Identity_Synthesis_v14</h2>
             </div>
-            <span className="text-2xl font-bold text-gradient-primary">CircuitSathi</span>
-          </Link>
+            <span className="text-[9px] font-mono text-muted-foreground/40 font-bold uppercase tracking-widest">REG_07.X</span>
+          </div>
 
-          {/* Form Card */}
-          <div className="floating-card p-8">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">Create Account</h1>
-              <p className="text-sm text-muted-foreground">
-                Join CircuitSathi and start debugging smarter
+          <div className="p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-black uppercase tracking-tighter">Create_Unit</h1>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                Register_New_Operator_Node
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Operator_Identity_Name</Label>
                   <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
+                    id="name"
+                    name="name"
+                    placeholder="ENGINEER_NAME"
+                    value={formData.name}
                     onChange={handleChange}
                     required
+                    className="bg-primary/5 border-primary/20 h-10 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
                 </div>
-                {/* Password Requirements */}
-                {formData.password && (
-                  <div className="space-y-1 mt-2">
-                    {passwordRequirements.map((req) => (
-                      <div
-                        key={req.label}
-                        className={`flex items-center gap-2 text-xs ${
-                          req.met ? "text-success" : "text-muted-foreground"
-                        }`}
-                      >
-                        <Check className={`w-3 h-3 ${req.met ? "opacity-100" : "opacity-40"}`} />
-                        {req.label}
-                      </div>
-                    ))}
+
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Communication_Buffer (Email)</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="OPERATOR@SYSTEM.CORE"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="bg-primary/5 border-primary/20 h-10 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="password" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Security_Token</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      className="bg-primary/5 border-primary/20 h-10 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4"
+                    />
                   </div>
-                )}
+                  <div className="space-y-1">
+                    <Label htmlFor="confirmPassword" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Token_Verify</Label>
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                      className="bg-primary/5 border-primary/20 h-10 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary px-4"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="flex items-start gap-2">
+              <div className="flex items-center gap-3 py-2">
                 <Checkbox
                   id="terms"
                   checked={acceptTerms}
                   onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                  className="border-primary/40 data-[state=checked]:bg-primary rounded-none"
                 />
-                <Label htmlFor="terms" className="text-sm text-muted-foreground font-normal cursor-pointer">
-                  I agree to the{" "}
-                  <Link to="/terms" className="text-primary hover:underline">
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link to="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </Link>
+                <Label htmlFor="terms" className="text-[8px] text-muted-foreground font-bold uppercase cursor-pointer leading-tight tracking-widest">
+                  AUTHORIZE_COMPLIANCE_WITH_SYSTEM_TERMS_&_PRIVACY_MODEL
                 </Label>
               </div>
 
               <Button
                 type="submit"
-                variant="neon"
-                size="lg"
                 disabled={isLoading}
-                className="w-full"
+                className="h-12 w-full bg-primary hover:bg-primary/90 text-[11px] font-black uppercase tracking-[0.3em] rounded-none border border-primary/20 shadow-[0_4px_20px_rgba(var(--primary-rgb),0.1)] mt-2"
               >
-                {isLoading ? "Creating account..." : "Create Account"}
+                {isLoading ? "Synthesizing..." : "Initialize_Identity"}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link to="/login" className="text-primary hover:underline font-medium">
-                  Sign in
+            <div className="pt-4 text-center border-t border-primary/10">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Authenticated?{" "}
+                <Link to="/login" className="text-primary hover:underline decoration-2 underline-offset-4">
+                  Establish_Connection
                 </Link>
               </p>
             </div>
           </div>
 
-          {/* Back to Home */}
-          <div className="text-center mt-6">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
-              ← Back to Home
-            </Link>
+          {/* Footer Module */}
+          <div className="bg-primary/5 px-6 py-3 flex items-center justify-between border-t border-primary/10">
+            <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/40 leading-none">Security: Encrypted_X10</span>
+            <span className="text-[8px] font-mono text-primary/40 leading-none">BUILD_ID: N3XA-664</span>
           </div>
         </div>
       </div>

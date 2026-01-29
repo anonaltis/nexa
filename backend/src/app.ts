@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import projectRoutes from './routes/projectRoutes';
+import schematicRoutes from './routes/schematicRoutes';
+import componentRoutes from './routes/componentRoutes';
 import { authMiddleware } from './middleware/auth';
 import { askPCB, analyzeCircuit, generateCode, chatMessage } from './controllers/pcbController';
 import { errorHandler } from './utils/errorHandler';
@@ -24,9 +26,11 @@ app.use(express.json());
 // --- 1. HEALTH ---
 app.get('/health', (req, res) => res.status(200).json({ status: 'Main Backend is running' }));
 
-// --- 2. AUTH & PROJECTS (Native Node Implementation) ---
+// --- 2. AUTH, PROJECTS, SCHEMATICS & COMPONENTS ---
 app.use('/auth', authRoutes);
 app.use('/projects', projectRoutes);
+app.use('/schematics', schematicRoutes);
+app.use('/components', componentRoutes);
 
 // --- 3. AI ENDPOINTS (Protected) ---
 app.use('/chat', authMiddleware, (req, res, next) => {

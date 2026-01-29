@@ -16,153 +16,68 @@ const Navbar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "New Project", path: "/chat", icon: MessageSquare },
-    { name: "Schematic", path: "/schematic", icon: PenTool },
-    { name: "PCB Viewer", path: "/pcb", icon: Cpu },
-    { name: "Code Editor", path: "/code", icon: Code },
-    { name: "Analyzer", path: "/analyzer", icon: Activity },
-    { name: "Components", path: "/components", icon: Database },
-  ];
+  // Removed navLinks as per user request
+  const navLinks: any[] = [];
 
   const isActive = (path: string) => location.pathname === path;
 
-  return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="container max-w-7xl mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="relative">
-              <CircuitBoard className="w-8 h-8 text-primary animate-pulse-glow" />
-              <div className="absolute inset-0 w-8 h-8 bg-primary/20 blur-lg rounded-full" />
-            </div>
-            <span className="text-xl font-bold text-gradient-primary">ElectroLab</span>
-          </Link>
+  const publicPaths = ["/", "/about", "/contact", "/login", "/signup"];
+  const isPublicPath = publicPaths.includes(location.pathname);
+  const showSidebar = !!user && !isPublicPath;
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {user && navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-primary/10 hover:text-primary ${
-                  isActive(link.path) ? "text-primary bg-primary/10" : "text-muted-foreground"
-                }`}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.name}
+  return (
+    <nav className={`sticky top-0 z-40 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl transition-all duration-300 ${showSidebar ? "ml-64 w-[calc(100%-16rem)]" : ""}`}>
+      <div className="container max-w-7xl mx-auto px-4">
+        <div className="flex h-16 items-center">
+          {/* Left Side: Logo (if no sidebar) */}
+          <div className="flex-1 flex items-center">
+            {!showSidebar && (
+              <Link to="/" className="flex items-center gap-2">
+                <span className="text-xl font-bold text-gradient-primary uppercase tracking-tighter">EL</span>
               </Link>
-            ))}
+            )}
           </div>
 
-          {/* Auth Buttons / User Menu */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Center: Project Name */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <span className="text-lg md:text-xl font-black text-foreground uppercase tracking-[0.3em] font-mono">
+              ElectroLab
+            </span>
+          </div>
+
+          {/* Right Side: Auth Buttons / User Menu */}
+          <div className="flex-1 flex justify-end items-center gap-3">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-sm font-mono">{user.name}</span>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-primary/5">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{user.name}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                <DropdownMenuContent align="end" className="w-48 bg-card border-primary/20">
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      Profile
+                    <Link to="/profile" className="text-[10px] font-bold uppercase tracking-widest">
+                      User Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="flex items-center gap-2 text-destructive">
-                    <LogOut className="w-4 h-4" />
-                    Logout
+                  <DropdownMenuSeparator className="bg-primary/10" />
+                  <DropdownMenuItem onClick={logout} className="text-destructive text-[10px] font-bold uppercase tracking-widest">
+                    Terminate Session
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Button variant="ghost" asChild>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" asChild className="h-8 px-4 text-[10px] font-bold uppercase tracking-widest">
                   <Link to="/login">Login</Link>
                 </Button>
-                <Button asChild className="bg-primary hover:bg-primary/90">
-                  <Link to="/signup">Get Started</Link>
+                <Button asChild className="h-8 px-4 bg-primary hover:bg-primary/90 text-[10px] font-bold uppercase tracking-widest">
+                  <Link to="/signup">Initialize</Link>
                 </Button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-foreground" />
-            ) : (
-              <Menu className="w-6 h-6 text-foreground" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border/50">
-            <div className="flex flex-col gap-2">
-              {user && navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors hover:text-primary ${
-                    isActive(link.path) ? "text-primary bg-primary/10 rounded-lg" : "text-muted-foreground"
-                  }`}
-                >
-                  <link.icon className="w-5 h-5" />
-                  {link.name}
-                </Link>
-              ))}
-              <div className="border-t border-border/50 pt-3 mt-2 px-4 flex flex-col gap-2">
-                {user ? (
-                  <>
-                    <Link
-                      to="/profile"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="py-2 text-sm text-muted-foreground hover:text-primary"
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      onClick={() => {
-                        logout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="py-2 text-sm text-destructive text-left"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Button variant="ghost" asChild className="justify-start">
-                      <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                        Login
-                      </Link>
-                    </Button>
-                    <Button asChild className="bg-primary">
-                      <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                        Get Started
-                      </Link>
-                    </Button>
-                  </>
-                )}
               </div>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );

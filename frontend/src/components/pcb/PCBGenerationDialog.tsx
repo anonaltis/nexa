@@ -112,113 +112,118 @@ const PCBGenerationDialog = ({ onPCBGenerated }: PCBGenerationDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-primary hover:bg-primary/90">
-          <Cpu className="w-4 h-4" />
-          Generate PCB
+        <Button className="h-10 px-4 bg-primary hover:bg-primary/90 text-[10px] font-bold uppercase tracking-widest border border-primary/20">
+          Initialize Generation
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-primary" />
-            AI PCB Generator
+      <DialogContent className="sm:max-w-[700px] border-primary/20 bg-card p-0 overflow-hidden">
+        <DialogHeader className="p-6 bg-primary/5 border-b border-primary/10">
+          <DialogTitle className="text-sm font-bold uppercase tracking-[0.2em] text-primary">
+            AI PCB Optimization Engine
           </DialogTitle>
-          <DialogDescription>
-            Select components and let AI generate an optimized PCB layout.
+          <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pt-1">
+            Logic synthesis and component place-and-route
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
           {/* Project Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Project Description (optional)</Label>
+            <Label htmlFor="description" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Functional Specification (Markdown/Text)
+            </Label>
             <Textarea
               id="description"
-              placeholder="E.g., Temperature monitoring system with WiFi connectivity..."
+              placeholder="DEFINE PROJECT SCOPE AND CONNECTIVITY PARAMETERS..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="resize-none"
+              rows={3}
+              className="resize-none bg-background/50 border-primary/20 font-bold text-xs uppercase placeholder:text-muted-foreground/30 focus:border-primary"
             />
           </div>
 
           {/* Board Size */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="width">Board Width (mm)</Label>
+              <Label htmlFor="width" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">X-Dimension (MM)</Label>
               <Input
                 id="width"
                 type="number"
                 value={boardWidth}
                 onChange={(e) => setBoardWidth(e.target.value)}
-                min="20"
-                max="300"
+                className="bg-background/50 border-primary/20 font-bold text-xs"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="height">Board Height (mm)</Label>
+              <Label htmlFor="height" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Y-Dimension (MM)</Label>
               <Input
                 id="height"
                 type="number"
                 value={boardHeight}
                 onChange={(e) => setBoardHeight(e.target.value)}
-                min="20"
-                max="300"
+                className="bg-background/50 border-primary/20 font-bold text-xs"
               />
             </div>
           </div>
 
           {/* Selected Components */}
-          <div className="space-y-2">
-            <Label>Selected Components ({selectedComponents.length})</Label>
-            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border border-border rounded-lg bg-muted/30">
+          <div className="space-y-3">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Active Component Stack ({selectedComponents.length})</Label>
+            <div className="flex flex-wrap gap-2 min-h-[60px] p-3 border border-primary/10 rounded-md bg-black/20 shadow-inner">
               {selectedComponents.length === 0 ? (
-                <span className="text-sm text-muted-foreground">
-                  Click components below to add them
+                <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest flex items-center h-full">
+                  Waiting for component assignment...
                 </span>
               ) : (
                 selectedComponents.map((comp) => (
                   <Badge
                     key={comp}
-                    variant="secondary"
-                    className="gap-1 cursor-pointer hover:bg-destructive/20"
+                    variant="outline"
+                    className="gap-2 px-3 py-1 text-[9px] font-bold uppercase tracking-tight border-primary/30 text-primary hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-all cursor-pointer group"
                     onClick={() => removeComponent(comp)}
                   >
                     {comp}
-                    <X className="w-3 h-3" />
+                    <span className="text-[7px] opacity-40 group-hover:opacity-100">PURGE</span>
                   </Badge>
                 ))
               )}
             </div>
           </div>
 
-          {/* Custom Component */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Add custom component..."
-              value={customComponent}
-              onChange={(e) => setCustomComponent(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addCustomComponent()}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={addCustomComponent}
-              disabled={!customComponent.trim()}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+          {/* Custom Component Input */}
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Manual Asset Entry</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="ENTER MODULE IDENTIFIER..."
+                value={customComponent}
+                onChange={(e) => setCustomComponent(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addCustomComponent()}
+                className="bg-background/50 border-primary/20 font-bold text-xs uppercase"
+              />
+              <Button
+                variant="outline"
+                onClick={addCustomComponent}
+                disabled={!customComponent.trim()}
+                className="px-4 text-[9px] font-bold uppercase tracking-widest border-primary/30 hover:bg-primary/10"
+              >
+                Inject
+              </Button>
+            </div>
           </div>
 
-          {/* Common Components */}
-          <div className="space-y-2">
-            <Label>Common Components</Label>
-            <div className="flex flex-wrap gap-2">
+          {/* Common Components Registry */}
+          <div className="space-y-3">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Standardized Assets Library</Label>
+            <div className="flex flex-wrap gap-1.5">
               {COMMON_COMPONENTS.map((comp) => (
                 <Badge
                   key={comp}
                   variant={selectedComponents.includes(comp) ? "default" : "outline"}
-                  className="cursor-pointer transition-colors"
+                  className={`cursor-pointer px-2 py-1 text-[8px] font-bold uppercase tracking-tight transition-all duration-200 ${selectedComponents.includes(comp)
+                      ? "bg-primary border-transparent"
+                      : "border-primary/10 hover:border-primary/50 bg-primary/5"
+                    }`}
                   onClick={() =>
                     selectedComponents.includes(comp)
                       ? removeComponent(comp)
@@ -232,32 +237,26 @@ const PCBGenerationDialog = ({ onPCBGenerated }: PCBGenerationDialogProps) => {
           </div>
 
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-              {error}
+            <div className="text-[10px] font-bold uppercase tracking-widest text-destructive bg-destructive/10 border border-destructive/20 p-3 rounded">
+              SIGNAL FAULT: {error}
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+        <DialogFooter className="p-6 bg-primary/5 border-t border-primary/10 gap-3">
+          <Button
+            variant="ghost"
+            onClick={() => setOpen(false)}
+            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-white"
+          >
+            Abort Operation
           </Button>
           <Button
             onClick={handleGenerate}
             disabled={isGenerating || selectedComponents.length === 0}
-            className="gap-2"
+            className="h-10 px-8 bg-primary hover:bg-primary/90 text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
           >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Cpu className="w-4 h-4" />
-                Generate PCB
-              </>
-            )}
+            {isGenerating ? "OPTIMIZING GRID..." : "EXECUTE GENERATION"}
           </Button>
         </DialogFooter>
       </DialogContent>

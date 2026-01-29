@@ -63,15 +63,59 @@ async def chat_message(request: ChatMessageRequest):
             "timestamp": datetime.utcnow()
         }
     
+    system_prompt = """
+    You are Nexa AI, a professional electronics project assistant. 
+    Your goal is to help users plan, design, and build electronics projects.
+    
+    If the user describes a project they want to build, help them define:
+    1. Project name and goal
+    2. Required components
+    3. Basic circuit connection logic
+    
+    When you feel you have enough information to form a solid initial plan, include a JSON block in your response with the following structure:
+    ---PLAN_COMPLETE---
+    {
+        "isPlanComplete": true,
+        "plan": {
+            "name": "Project Name",
+            "description": "Brief description",
+            "category": "one of: iot, robotics, audio, power, communication, sensor, display, other",
+            "tags": ["tag1", "tag2"],
+            "components": [{"name": "Comp1", "quantity": 1, "purpose": "..."}],
+            "connections": [{"from": "Pin A", "to": "Pin B", "description": "..."}]
+        }
+    }
+    ---END_PLAN---
+    
+    Provide helpful, expert advice in plain markdown text first.
+    """
+    
     try:
         response = client.models.generate_content(
             model='gemini-2.0-flash-lite-preview-02-05', 
-            contents=request.content
+            contents=[system_prompt, request.content]
         )
+        
+        text = response.text
+        metadata = {}
+        
+        # Simple parser for the metadata block
+        if "---PLAN_COMPLETE---" in text:
+            try:
+                parts = text.split("---PLAN_COMPLETE---")
+                rest = parts[1].split("---END_PLAN---")
+                json_str = rest[0].strip()
+                metadata = json.loads(json_str)
+                # Clean up the text of the message
+                text = parts[0] + (rest[1] if len(rest) > 1 else "")
+            except Exception as e:
+                print(f"Failed to parse metadata: {e}")
+
         return {
             "id": str(uuid.uuid4()),
             "role": "assistant",
-            "content": response.text,
+            "content": text.strip(),
+            "metadata": metadata,
             "timestamp": datetime.utcnow()
         }
     except Exception as e:

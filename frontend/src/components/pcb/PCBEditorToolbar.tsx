@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { 
-  MousePointer2, 
-  Move, 
-  Pencil, 
-  Trash2, 
-  RotateCw, 
+import {
+  MousePointer2,
+  Move,
+  Pencil,
+  Trash2,
+  RotateCw,
   Circle,
   Undo2,
   Redo2,
@@ -43,125 +43,97 @@ const PCBEditorToolbar = ({
   onCancelRouting,
 }: PCBEditorToolbarProps) => {
   return (
-    <div className="flex items-center gap-1 p-2 bg-card/80 backdrop-blur-sm border border-border rounded-lg">
-      {/* Edit Mode Toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant={isEditMode ? "default" : "ghost"}
-            size="icon"
-            onClick={onToggleEditMode}
-            className="h-8 w-8"
-          >
-        {isEditMode ? <Move className="w-4 h-4" /> : <MousePointer2 className="w-4 h-4" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          {isEditMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-        </TooltipContent>
-      </Tooltip>
+    <div className="flex items-center gap-2 p-1 bg-black/40 backdrop-blur-md border border-primary/20 rounded shadow-lg">
+      {/* Mode Switcher */}
+      <div className="flex bg-primary/5 rounded border border-primary/10 overflow-hidden">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleEditMode}
+          className={`h-9 px-4 text-[10px] font-bold uppercase tracking-widest rounded-none transition-all ${isEditMode
+            ? "bg-primary text-primary-foreground shadow-inner"
+            : "text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
+        >
+          {isEditMode ? "WRT_MODE" : "RD_ONLY"}
+        </Button>
+      </div>
 
-      {isEditMode && (
-        <>
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          {/* Undo/Redo buttons */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onUndo}
-                disabled={!canUndo}
-                className="h-8 w-8"
-              >
-                <Undo2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
-          </Tooltip>
+      <div className="h-6 w-px bg-primary/20 mx-1" />
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onRedo}
-                disabled={!canRedo}
-                className="h-8 w-8"
-              >
-                <Redo2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
-          </Tooltip>
+      {isEditMode ? (
+        <div className="flex items-center gap-1.5 px-1 animate-in fade-in slide-in-from-left-2">
+          {/* History Module */}
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="h-8 px-3 text-[9px] font-bold uppercase border-primary/20 hover:bg-primary/10 disabled:opacity-30"
+            >
+              Undo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="h-8 px-3 text-[9px] font-bold uppercase border-primary/20 hover:bg-primary/10 disabled:opacity-30"
+            >
+              Redo
+            </Button>
+          </div>
 
-          <div className="w-px h-6 bg-border mx-1" />
-          
-          {/* Routing indicator */}
-          
-          {/* Routing indicator */}
-          {isRouting && (
-            <div className="flex items-center gap-2 px-2">
-              <Pencil className="w-4 h-4 text-primary animate-pulse" />
-              <span className="text-xs text-primary font-medium">Routing...</span>
+          <div className="h-4 w-px bg-primary/10 mx-2" />
+
+          {/* Contextual Actions */}
+          {isRouting ? (
+            <div className="flex items-center gap-3 px-2 py-1 bg-primary/10 border border-primary/20 rounded">
+              <span className="text-[9px] font-bold text-primary animate-pulse uppercase tracking-widest">Active Routing Sequence...</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onCancelRouting}
-                className="h-6 px-2 text-xs"
+                className="h-6 px-2 text-[8px] font-bold uppercase hover:bg-destructive/20 text-destructive"
               >
-                Cancel (Esc)
+                Abort (Esc)
               </Button>
             </div>
-          )}
-
-          {/* Component actions */}
-          {selectedComponent && !isRouting && (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onRotate}
-                    className="h-8 w-8"
-                  >
-                    <RotateCw className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Rotate 90°</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onDelete}
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete Component</TooltipContent>
-              </Tooltip>
-            </>
-          )}
-
-          {!selectedComponent && !isRouting && (
-            <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
-              <Circle className="w-3 h-3" />
-              <span>Click pins to route • Drag components to move</span>
+          ) : selectedComponent ? (
+            <div className="flex items-center gap-1.5 animate-in zoom-in-95 duration-200">
+              <span className="text-[8px] font-bold text-muted-foreground uppercase mr-1">Modify Asset:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRotate}
+                className="h-8 px-3 text-[9px] font-bold uppercase border-primary/30 hover:bg-primary/10"
+              >
+                Rotate
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDelete}
+                className="h-8 px-3 text-[9px] font-bold uppercase border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                Purge
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center px-3 py-1 bg-primary/5 rounded border border-primary/5">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
+                Station Ready: Engage nodes or translate assets
+              </span>
             </div>
           )}
-        </>
-      )}
-
-      {!isEditMode && (
-        <span className="text-xs text-muted-foreground px-2">
-          Click Edit Mode to customize
-        </span>
+        </div>
+      ) : (
+        <div className="px-3 flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_hsl(var(--success))]" />
+          <span className="text-[9px] font-bold text-success/80 uppercase tracking-widest">
+            Diagnostic Viewport Active • Integrity Verified
+          </span>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Cpu, Eye, EyeOff, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,32 +8,28 @@ import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loginDemo } = useAuth();
+  const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
-      const success = await login(formData.email, formData.password);
+      const success = await login(email, password);
       if (success) {
         toast({
-          title: "Welcome back!",
-          description: "You've successfully logged in.",
+          title: "ACCESS_GRANTED",
+          description: "SESSION_INITIALIZED",
         });
         navigate("/dashboard");
       }
     } catch (error) {
       toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
+        title: "ACCESS_DENIED",
+        description: "INVALID_CREDENTIALS",
         variant: "destructive",
       });
     } finally {
@@ -42,156 +37,125 @@ const Login = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    try {
+      const success = await login("demo@example.com", "password123");
+      if (success) {
+        toast({
+          title: "DEMO_ACCESS_GRANTED",
+          description: "TEMPORARY_SESSION_ESTABLISHED",
+        });
+        navigate("/dashboard");
+      }
+    } catch (error) {
+       toast({
+        title: "DEMO_ACCESS_FAILED",
+        description: "SYSTEM_OVERLOAD",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
-
-      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
-        <div className="w-full max-w-md">
-          {/* Logo */}
-          <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-            <div className="relative">
-              <Cpu className="w-10 h-10 text-primary animate-pulse-glow" />
-              <div className="absolute inset-0 w-10 h-10 bg-primary/20 blur-xl rounded-full" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Decorative Technical Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+      
+      <div className="w-full max-w-md relative z-10 transition-all duration-500 animate-in fade-in zoom-in-95">
+        <div className="blueprint-card p-0 overflow-hidden border-primary/30 bg-background/80 backdrop-blur-xl shadow-[0_0_50px_rgba(var(--primary-rgb),0.1)]">
+          {/* Header Module */}
+          <div className="bg-primary/10 px-6 py-4 border-b border-primary/20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+               <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+               <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Security_Protocol_v9</h2>
             </div>
-            <span className="text-2xl font-bold text-gradient-primary">CircuitSathi</span>
-          </Link>
+            <span className="text-[9px] font-mono text-muted-foreground/40 font-bold uppercase tracking-widest">TS_404.99</span>
+          </div>
 
-          {/* Form Card */}
-          <div className="floating-card p-8">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">Welcome Back</h1>
-              <p className="text-sm text-muted-foreground">
-                Sign in to continue to your workspace
+          <div className="p-8 space-y-8">
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-black uppercase tracking-tighter">Initialize_Session</h1>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                Input_Operator_Credentials // Node_Id: {Math.random().toString(16).substring(2, 8).toUpperCase()}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button
-                type="submit"
-                variant="neon"
-                size="lg"
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border/50" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground font-medium tracking-wider">
-                    Quick Access
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={async () => {
-                    setIsLoading(true);
-                    const success = await loginDemo();
-                    if (success) {
-                      toast({
-                        title: "Demo Mode Activated",
-                        description: "Logged in as Demo User with sample projects.",
-                      });
-                      navigate("/dashboard");
-                    } else {
-                      toast({
-                        title: "Access Denied",
-                        description: "Could not connect to the demo server.",
-                        variant: "destructive",
-                      });
-                    }
-                    setIsLoading(false);
-                  }}
-                  disabled={isLoading}
-                  className="w-full group relative overflow-hidden border-primary/20 hover:border-primary/50 bg-primary/5 hover:bg-primary/10 transition-all duration-300"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Zap className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                    <span>Login with Demo Account</span>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Identity_Buffer</Label>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="OPERATOR@SYSTEM.CORE"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="bg-primary/5 border-primary/20 h-12 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary focus-visible:border-primary px-4 transition-all"
+                    />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Security_Token</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="bg-primary/5 border-primary/20 h-12 text-[11px] font-bold uppercase tracking-wider placeholder:opacity-20 rounded-none focus-visible:ring-primary focus-visible:border-primary px-4 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="h-12 w-full bg-primary hover:bg-primary/90 text-[11px] font-black uppercase tracking-[0.3em] rounded-none border border-primary/20 shadow-[0_4px_20px_rgba(var(--primary-rgb),0.2)]"
+                >
+                  {isLoading ? "Validating_Parity..." : "Establish_Connection"}
                 </Button>
 
-                <p className="text-[10px] text-center text-muted-foreground uppercase tracking-tighter opacity-70">
-                  Instant access to all features • No registration required
-                </p>
+                <div className="relative py-2">
+                   <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-primary/10"></span></div>
+                   <div className="relative flex justify-center"><span className="bg-background px-2 text-[8px] font-black uppercase tracking-widest text-muted-foreground/40">Alternative_Node</span></div>
+                </div>
+
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleDemoLogin}
+                  disabled={isLoading}
+                  className="h-10 w-full text-[10px] font-bold uppercase tracking-[0.2em] rounded-none border-primary/10 hover:bg-primary/5"
+                >
+                  Bypass_Authentication [Demo]
+                </Button>
               </div>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-medium">
-                  Sign up
+            <div className="pt-4 text-center border-t border-primary/10">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                New_Operator?{" "}
+                <Link to="/signup" className="text-primary hover:underline decoration-2 underline-offset-4">
+                  Register_Unit
                 </Link>
               </p>
             </div>
           </div>
 
-          {/* Back to Home */}
-          <div className="text-center mt-6">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
-              ← Back to Home
-            </Link>
+          {/* Footer Module */}
+          <div className="bg-primary/5 px-6 py-3 flex items-center justify-between border-t border-primary/10">
+             <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/40 leading-none">Status: Ready_For_Input</span>
+             <span className="text-[8px] font-mono text-primary/40 leading-none">{new Date().toISOString().substring(11, 19)}</span>
           </div>
         </div>
       </div>

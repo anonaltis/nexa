@@ -11,6 +11,7 @@ interface InteractivePCBRendererProps {
   showLabels?: boolean;
   isEditMode?: boolean;
   selectedComponent?: string | null;
+  selectedTrace?: string | null;
   routingState?: {
     isRouting: boolean;
     currentPoints: { x: number; y: number }[];
@@ -27,6 +28,7 @@ interface InteractivePCBRendererProps {
   onPinClick?: (componentId: string, pinId: string, x: number, y: number) => void;
   onCanvasClick?: (x: number, y: number) => void;
   onComponentSelect?: (componentId: string | null) => void;
+  onTraceSelect?: (traceId: string | null) => void;
 }
 
 const InteractivePCBRenderer = ({
@@ -39,6 +41,7 @@ const InteractivePCBRenderer = ({
   showLabels = true,
   isEditMode = false,
   selectedComponent = null,
+  selectedTrace = null,
   routingState = { isRouting: false, currentPoints: [] },
   layers = { top: true, bottom: true, silkscreen: true, traces: true },
   onDragStart,
@@ -47,6 +50,7 @@ const InteractivePCBRenderer = ({
   onPinClick,
   onCanvasClick,
   onComponentSelect,
+  onTraceSelect,
 }: InteractivePCBRendererProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const isDragging = useRef(false);
@@ -83,12 +87,19 @@ const InteractivePCBRenderer = ({
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     if (e.target === svgRef.current) {
       onComponentSelect?.(null);
+      onTraceSelect?.(null);
       if (routingState.isRouting) {
         const { x, y } = getSVGCoordinates(e.clientX, e.clientY);
         onCanvasClick?.(x, y);
       }
     }
-  }, [getSVGCoordinates, onCanvasClick, onComponentSelect, routingState.isRouting]);
+  }, [getSVGCoordinates, onCanvasClick, onComponentSelect, onTraceSelect, routingState.isRouting]);
+
+  const handleTraceClick = useCallback((e: React.MouseEvent, traceId: string) => {
+    if (!isEditMode) return;
+    e.stopPropagation();
+    onTraceSelect?.(traceId);
+  }, [isEditMode, onTraceSelect]);
 
   const handlePinClick = useCallback((e: React.MouseEvent, componentId: string, pinId: string, x: number, y: number) => {
     if (!isEditMode) return;
@@ -116,7 +127,7 @@ const InteractivePCBRenderer = ({
   // Generate pins for components
   const getComponentPins = (comp: PCBComponent) => {
     const pins: { id: string; x: number; y: number }[] = [];
-    
+
     // Generate pins based on component type
     if (comp.type === "chip" || comp.type === "ic") {
       const pinsPerSide = Math.floor(comp.width / 12);
@@ -143,7 +154,7 @@ const InteractivePCBRenderer = ({
       pins.push({ id: `collector`, x: comp.x + comp.width / 2, y: comp.y - 2 });
       pins.push({ id: `emitter`, x: comp.x + comp.width + 2, y: comp.y + comp.height / 2 });
     }
-    
+
     return pins;
   };
 
@@ -151,9 +162,9 @@ const InteractivePCBRenderer = ({
     const isSelected = selectedComponent === comp.id;
     const rotation = comp.rotation || 0;
     const pins = getComponentPins(comp);
-    
+
     return (
-      <g 
+      <g
         key={comp.id}
         transform={`rotate(${rotation}, ${comp.x + comp.width / 2}, ${comp.y + comp.height / 2})`}
         onMouseDown={(e) => handleMouseDown(e, comp.id)}
@@ -178,10 +189,10 @@ const InteractivePCBRenderer = ({
             className="animate-pulse"
           />
         )}
-        
+
         {/* Component body based on type */}
         {renderComponentBody(comp)}
-        
+
         {/* Interactive pins (only in edit mode) */}
         {isEditMode && pins.map((pin) => (
           <circle
@@ -363,7 +374,19 @@ const InteractivePCBRenderer = ({
         <g opacity="0.6">
           {tracePaths.filter((t) => t && t.layer === "bottom").map((trace) =>
             trace ? (
-              <path key={trace.id} d={trace.pathData} fill="none" stroke="hsl(var(--pcb-trace-bottom))" strokeWidth={trace.width || 2} strokeLinecap="round" strokeLinejoin="round" />
+              <g key={trace.id} onClick={(e) => handleTraceClick(e, trace.id)}>
+                {/* Wider invisible stroke for better clickability */}
+                <path d={trace.pathData} fill="none" stroke="transparent" strokeWidth={(trace.width || 2) + 10} className={isEditMode ? "cursor-pointer" : ""} />
+                <path
+                  d={trace.pathData}
+                  fill="none"
+                  stroke={selectedTrace === trace.id ? "hsl(var(--primary))" : "hsl(var(--pcb-trace-bottom))"}
+                  strokeWidth={trace.width || 2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={selectedTrace === trace.id ? "animate-pulse" : ""}
+                />
+              </g>
             ) : null
           )}
         </g>
@@ -374,7 +397,19 @@ const InteractivePCBRenderer = ({
         <g filter="url(#trace-glow)">
           {tracePaths.filter((t) => t && t.layer !== "bottom").map((trace) =>
             trace ? (
-              <path key={trace.id} d={trace.pathData} fill="none" stroke="hsl(var(--pcb-trace))" strokeWidth={trace.width || 2} strokeLinecap="round" strokeLinejoin="round" />
+              <g key={trace.id} onClick={(e) => handleTraceClick(e, trace.id)}>
+                {/* Wider invisible stroke for better clickability */}
+                <path d={trace.pathData} fill="none" stroke="transparent" strokeWidth={(trace.width || 2) + 10} className={isEditMode ? "cursor-pointer" : ""} />
+                <path
+                  d={trace.pathData}
+                  fill="none"
+                  stroke={selectedTrace === trace.id ? "hsl(var(--primary))" : "hsl(var(--pcb-trace))"}
+                  strokeWidth={trace.width || 2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={selectedTrace === trace.id ? "animate-pulse" : ""}
+                />
+              </g>
             ) : null
           )}
         </g>

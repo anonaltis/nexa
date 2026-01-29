@@ -101,23 +101,21 @@ const ChatHistorySidebar = ({
   };
 
   return (
-    <div className="w-64 border-r border-border bg-card/50 flex flex-col h-full">
+    <div className="w-64 border-r border-border bg-card/50 flex flex-col h-full uppercase font-bold text-xs tracking-tight">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <Link
           to="/dashboard"
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-4"
+          className="flex items-center gap-2 text-[10px] text-muted-foreground hover:text-primary mb-4"
         >
-          <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
         </Link>
 
         <Button
           onClick={onNewSession}
-          className="w-full bg-primary hover:bg-primary/90 gap-2"
+          className="w-full bg-primary hover:bg-primary/90 text-[10px] font-bold uppercase"
           size="sm"
         >
-          <Plus className="w-4 h-4" />
           New Chat
         </Button>
       </div>
@@ -126,32 +124,30 @@ const ChatHistorySidebar = ({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {isLoading ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Loading sessions...
+            <div className="p-4 text-center text-xs text-muted-foreground">
+              Loading...
             </div>
           ) : sessions.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No chat history yet
+            <div className="p-4 text-center text-xs text-muted-foreground">
+              No history
             </div>
           ) : (
             sessions.map((session) => (
               <div
                 key={session._id}
-                className={`group relative flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                  currentSessionId === session._id
-                    ? "bg-primary/20 text-primary"
+                className={`group relative flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${currentSessionId === session._id
+                    ? "bg-primary/20 text-primary border border-primary/30"
                     : "hover:bg-muted/50"
-                }`}
+                  }`}
                 onClick={() => onSelectSession(session._id)}
               >
-                <MessageSquare className="w-4 h-4 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
+                  <div className="text-[10px] font-bold truncate">
                     {session.title}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatDate(session.updated_at)} - {session.message_count}{" "}
-                    messages
+                  <div className="text-[8px] text-muted-foreground uppercase">
+                    {formatDate(session.updated_at)} • {session.message_count}{" "}
+                    MSG
                   </div>
                 </div>
 
@@ -159,23 +155,22 @@ const ChatHistorySidebar = ({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      size="sm"
+                      className="h-6 px-1 opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-bold uppercase"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      OPTIONS
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-32">
+                  <DropdownMenuContent align="end" className="w-32 bg-card border-border">
                     <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
+                      className="text-destructive focus:text-destructive text-[10px] font-bold uppercase"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSessionToDelete(session._id);
                         setDeleteDialogOpen(true);
                       }}
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
