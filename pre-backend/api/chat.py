@@ -23,6 +23,7 @@ class ChatMessageRequest(BaseModel):
     content: str
     projectId: Optional[str] = None
     sessionId: Optional[str] = None  # Optional session ID for persistence
+    useReasoning: Optional[bool] = False # Toggle for Dual Agent mode
 
 class ChatMessageMetadata(BaseModel):
     type: Optional[str] = None # 'poll', 'question', etc.
@@ -108,6 +109,7 @@ if GENAI_API_KEY:
 
 from db import db
 from bson import ObjectId
+from services.dual_agent import get_dual_agent
 
 async def save_message_to_session(session_id: str, user_id: str, message: dict):
     """Helper to save a message to a chat session"""
@@ -161,16 +163,29 @@ async def chat_message(request: ChatMessageRequest, current_user: str = Depends(
 
     for attempt in range(max_retries):
         try:
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=request.content
-            )
+            response_text = ""
+            metadata = None
+            
+            if request.useReasoning and GENAI_API_KEY and GENAI_API_KEY != "MOCK":
+                 # Use Dual Agent Service
+                dual_agent = get_dual_agent(GENAI_API_KEY)
+                result = await dual_agent.generate_response(request.content)
+                response_text = result["content"]
+                metadata = result["metadata"]
+            else:
+                # Standard Chat using Client
+                response = client.models.generate_content(
+                    model=MODEL_NAME,
+                    contents=request.content
+                )
+                response_text = response.text
 
             response_data = {
                 "id": str(uuid.uuid4()),
                 "role": "assistant",
-                "content": response.text,
-                "timestamp": datetime.utcnow()
+                "content": response_text,
+                "timestamp": datetime.utcnow(),
+                "metadata": metadata
             }
 
             # Save assistant response to session

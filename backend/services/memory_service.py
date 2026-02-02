@@ -275,6 +275,55 @@ class MemoryService:
             print(f"Error getting conversation history: {e}")
             return []
 
+    async def add_message(
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Add a message to the conversation history."""
+        try:
+            import uuid
+            message = {
+                "id": str(uuid.uuid4()),
+                "role": role,
+                "content": content,
+                "timestamp": datetime.utcnow(),
+                "metadata": metadata or {}
+            }
+
+            # Update dict for the session
+            update_ops = {
+                "$push": {"messages": message},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+
+            # Valid ObjectId check
+            try:
+                oid = ObjectId(session_id)
+            except:
+                # If session_id is not a valid ObjectId (e.g. "new"), we might fail
+                # But typically the frontend should have created a session first.
+                return message
+
+            # Auto-update title if it's "New Chat" and this is a user message
+            if role == "user":
+                session = await db.db["chat_sessions"].find_one({"_id": oid}, {"title": 1})
+                if session and session.get("title") == "New Chat":
+                    title = content[:50] + ("..." if len(content) > 50 else "")
+                    update_ops["$set"]["title"] = title
+
+            await db.db["chat_sessions"].update_one(
+                {"_id": oid},
+                update_ops
+            )
+            return message
+        except Exception as e:
+            print(f"Error adding message to history: {e}")
+            return {}
+
+
     def prepare_context_for_ai(
         self,
         history: List[Dict[str, str]],

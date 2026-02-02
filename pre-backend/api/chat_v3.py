@@ -154,6 +154,18 @@ async def chat_message(
         # Get user context for personalization
         user_context = await _get_user_context(request.user_id)
 
+        # Get memory service
+        from services.memory_service import get_memory_service
+        memory = get_memory_service()
+
+        # Save USER message
+        await memory.add_message(
+            session_id=request.session_id,
+            role="user",
+            content=request.message,
+            metadata={"mode": mode}
+        )
+
         # Send to Gemini with function calling
         response = await gemini.chat(
             message=request.message,
@@ -187,8 +199,21 @@ async def chat_message(
                 mode
             )
 
+        # Save AI message
+        ai_content = response.final_response or "I couldn't generate a response."
+        await memory.add_message(
+            session_id=request.session_id,
+            role="assistant",
+            content=ai_content,
+            metadata={
+                "function_called": response.function_call.get("name") if response.function_call else None,
+                "confidence": response.confidence,
+                "verified": bool(verified_by)
+            }
+        )
+
         return ChatResponse(
-            response=response.final_response or "I couldn't generate a response.",
+            response=ai_content,
             function_called=response.function_call.get("name") if response.function_call else None,
             function_result=response.function_result,
             reasoning_steps=response.reasoning_chain,

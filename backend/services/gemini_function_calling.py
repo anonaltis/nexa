@@ -29,6 +29,7 @@ from functions.declarations import (
     get_declarations_for_mode
 )
 from services.function_executor import execute_function
+from .gemini_utils import retry_gemini_call_sync
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,16 @@ class GeminiFunctionCalling:
 
         return [Tool(function_declarations=function_declarations)]
 
+    def _sanitize_args(self, args):
+        """Recursively convert protobuf/special types to standard dicts/lists."""
+        if isinstance(args, (str, int, float, bool, type(None))):
+            return args
+        if hasattr(args, 'items'):
+            return {k: self._sanitize_args(v) for k, v in args.items()}
+        if hasattr(args, '__iter__'):
+             return [self._sanitize_args(v) for v in args]
+        return args
+
     async def chat(
         self,
         message: str,
@@ -161,56 +172,70 @@ class GeminiFunctionCalling:
 
             reasoning_chain.append(f"Processing user message: {message[:100]}...")
 
-            # Send message to Gemini
-            response = chat.send_message(enhanced_message)
+            # Send message to Gemini (with retry logic)
+            @retry_gemini_call_sync()
+            def send_message_safe(chat_session, msg):
+                return chat_session.send_message(msg)
 
-            # Check if Gemini wants to call a function
-            if response.candidates and response.candidates[0].content.parts:
-                for part in response.candidates[0].content.parts:
-                    # Check for function call
-                    if hasattr(part, 'function_call') and part.function_call:
-                        fc = part.function_call
-                        function_name = fc.name
-                        function_args = dict(fc.args) if fc.args else {}
+            response = send_message_safe(chat, enhanced_message)
 
-                        reasoning_chain.append(f"Gemini requested function: {function_name}")
-                        reasoning_chain.append(f"Arguments: {json.dumps(function_args, indent=2)}")
+            # Loop to handle multiple function calls (sequential tools)
+            # Default max_turns = 5 to prevent infinite loops
+            max_turns = 5
+            current_turn = 0
+            
+            while current_turn < max_turns:
+                # Check validation/safety
+                if not response.candidates or not response.candidates[0].content.parts:
+                     break
+                
+                part = response.candidates[0].content.parts[0]
+                
+                # Check for function call
+                if hasattr(part, 'function_call') and part.function_call:
+                    fc = part.function_call
+                    function_name = fc.name
+                    function_args = self._sanitize_args(fc.args) if fc.args else {}
 
-                        function_call_info = {
+                    reasoning_chain.append(f"Gemini requested function: {function_name}")
+                    reasoning_chain.append(f"Arguments: {json.dumps(function_args, indent=2)}")
+
+                    function_call_info = {
+                        "name": function_name,
+                        "arguments": function_args
+                    }
+
+                    # Execute the function
+                    logger.info(f"Executing function: {function_name}")
+                    function_result = await execute_function(function_name, function_args)
+
+                    reasoning_chain.append(f"Function executed successfully")
+                    reasoning_chain.append(f"Result keys: {list(function_result.keys())}")
+
+                    # Send function result back to Gemini
+                    from google.generativeai.types import content_types
+                    function_response = content_types.to_content({
+                        "function_response": {
                             "name": function_name,
-                            "arguments": function_args
+                            "response": function_result
                         }
+                    })
 
-                        # Execute the function
-                        logger.info(f"Executing function: {function_name}")
-                        function_result = await execute_function(function_name, function_args)
+                    # Get next response from Gemini (could be text OR another function call)
+                    response = send_message_safe(chat, function_response)
+                    current_turn += 1
+                    continue
 
-                        reasoning_chain.append(f"Function executed successfully")
-                        reasoning_chain.append(f"Result keys: {list(function_result.keys())}")
-
-                        # Send function result back to Gemini
-                        from google.generativeai.types import content_types
-                        function_response = content_types.to_content({
-                            "function_response": {
-                                "name": function_name,
-                                "response": function_result
-                            }
-                        })
-
-                        # Get final response from Gemini
-                        final_response_obj = chat.send_message(function_response)
-
-                        if final_response_obj.candidates:
-                            final_response = final_response_obj.text
-                            reasoning_chain.append("Gemini generated final response")
-
-                        break
-
-                    # Check for text response
-                    elif hasattr(part, 'text') and part.text:
-                        if not final_response:
-                            final_response = part.text
-                            reasoning_chain.append("Gemini returned direct text response")
+                # Check for text response
+                elif hasattr(part, 'text') and part.text:
+                    if not final_response:
+                        final_response = part.text
+                        reasoning_chain.append("Gemini returned direct text response")
+                    break
+                
+                else:
+                    # Unknown part type or empty
+                    break
 
             # Determine confidence based on whether function was called
             if function_result:
@@ -224,11 +249,21 @@ class GeminiFunctionCalling:
             else:
                 confidence = "medium"  # Direct text response without validation
 
+            # Safe extraction of text for the return object
+            safe_text = ""
+            try:
+                if response.candidates and response.candidates[0].content.parts:
+                    # Check if the part is actually text to avoid "Could not convert..." error on pure function calls
+                    # although usually .text handles mixed content, strict safety is better
+                    safe_text = response.text
+            except Exception:
+                safe_text = ""
+
             return GeminiFunctionResponse(
-                text=response.text if not function_call_info else None,
+                text=safe_text if not function_call_info else None,
                 function_call=function_call_info,
                 function_result=function_result,
-                final_response=final_response or response.text,
+                final_response=final_response or safe_text or "No response content generated.",
                 reasoning_chain=reasoning_chain,
                 confidence=confidence,
                 metadata={

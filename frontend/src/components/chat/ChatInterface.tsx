@@ -42,6 +42,7 @@ const ChatInterface = ({
 }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
+  const [useReasoning, setUseReasoning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [planningPhase, setPlanningPhase] = useState<"none" | "questions" | "complete">("none");
@@ -120,9 +121,15 @@ const ChatInterface = ({
     setIsLoading(true);
 
     try {
-      const response = await api.post("/chat/message", {
-        content: userMessage.content,
-        projectId: projectId
+      // Create session if first message
+      const currentSessionId = await createSessionIfNeeded();
+
+      // Use V3 Endpoint
+      const response = await api.post("/v3/chat/message", {
+        message: userMessage.content,
+        session_id: currentSessionId,
+        mode: "auto",
+        useReasoning: useReasoning
       });
 
       const data = response.data;
@@ -337,6 +344,18 @@ const ChatInterface = ({
 
       {/* Input Area */}
       <div className="border-t border-border p-4">
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={useReasoning}
+              onChange={(e) => setUseReasoning(e.target.checked)}
+              className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+            />
+            <span>Enable Deep Reasoning (Dual Agent Mode)</span>
+          </label>
+        </div>
+
         <div className="flex gap-3">
           <textarea
             value={input}
@@ -358,7 +377,7 @@ const ChatInterface = ({
           ENTER TO SEND • SHIFT+ENTER FOR NEW LINE
         </p>
       </div>
-    </div>
+    </div >
   );
 };
 
