@@ -14,6 +14,9 @@ from api.code import router as code_router
 from api.pcb import router as pcb_router
 from api.components import router as components_router
 from api.schematics import router as schematics_router
+from api.design import router as design_router
+from api.simulation import router as simulation_router
+from api.diagnostics import router as diagnostics_router, AnalyzeTextRequest, analyze_circuit_text
 from db import db
 
 @asynccontextmanager
@@ -53,6 +56,13 @@ app.include_router(code_router, prefix="/code", tags=["code"])
 app.include_router(pcb_router, prefix="/pcb", tags=["pcb"])
 app.include_router(components_router, prefix="/components", tags=["components"])
 app.include_router(schematics_router, prefix="/schematics", tags=["schematics"])
+app.include_router(design_router)  # Design has its own prefix: /api/design
+app.include_router(simulation_router)  # Simulation has its own prefix: /api/simulation
+app.include_router(diagnostics_router)  # Diagnostics has its own prefix: /api/diagnostics
+
+@app.post("/analyze-text")
+async def top_level_analyze_text(request: AnalyzeTextRequest):
+    return await analyze_circuit_text(request)
 
 @app.get("/")
 def read_root():

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import CodeMirror from "@uiw/react-codemirror";
 import { cpp } from "@codemirror/lang-cpp";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import CodeGenerationDialog from "@/components/code/CodeGenerationDialog";
+import { Wand2 } from "lucide-react";
 
 const CodeEditor = () => {
   const { user } = useAuth();
@@ -35,7 +37,29 @@ void loop() {
 }`);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [generatedLibraries, setGeneratedLibraries] = useState<{ name: string; version?: string }[]>([]);
+  const [generatedWiring, setGeneratedWiring] = useState<{ component: string; pin: string; board_pin: string }[]>([]);
   const currentProject = projectId ? getProject(projectId) : null;
+
+  // Handler for AI-generated code
+  const handleCodeGenerated = (result: {
+    files: { filename: string; content: string }[];
+    libraries: { name: string; version?: string }[];
+    wiring: { component: string; pin: string; board_pin: string }[];
+    notes?: string;
+  }) => {
+    // Set the main code file
+    const mainFile = result.files.find(f => f.filename.endsWith('.ino') || f.filename.endsWith('.cpp'));
+    if (mainFile) {
+      setCode(mainFile.content);
+    }
+    setGeneratedLibraries(result.libraries || []);
+    setGeneratedWiring(result.wiring || []);
+    toast.success("AI_CODE_GENERATED_SUCCESSFULLY");
+    if (result.notes) {
+      toast.info(result.notes, { duration: 5000 });
+    }
+  };
 
   const handleUpload = async () => {
     setIsUploading(true);
@@ -80,6 +104,8 @@ void loop() {
             </p>
           </div>
           <div className="flex items-center gap-4 relative z-10">
+            {/* AI Code Generation Button */}
+            <CodeGenerationDialog onCodeGenerated={handleCodeGenerated} />
             <Button
               onClick={handleUpload}
               disabled={isUploading}
@@ -144,12 +170,20 @@ void loop() {
               <div className="flex items-center gap-2 px-1">
                 <span className="h-0.5 w-3 bg-primary/40" />
                 <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Library_Registry</h2>
+                {generatedLibraries.length > 0 && (
+                  <span className="text-[8px] font-bold bg-green-500/20 text-green-400 px-2 py-0.5 rounded uppercase">AI Generated</span>
+                )}
               </div>
               <div className="grid gap-2">
-                {["Arduino_Core", "WiFi_HAL", "ESP32_GPIO", "HTTP_Client"].map(lib => (
-                  <div key={lib} className="blueprint-card p-4 border-primary/10 bg-primary/[0.02] flex items-center justify-between group">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">{lib}</span>
-                    <span className="text-[8px] font-mono text-muted-foreground/40">V1.2.0</span>
+                {(generatedLibraries.length > 0 ? generatedLibraries : [
+                  { name: "Arduino_Core", version: "1.2.0" },
+                  { name: "WiFi_HAL", version: "1.2.0" },
+                  { name: "ESP32_GPIO", version: "1.2.0" },
+                  { name: "HTTP_Client", version: "1.2.0" }
+                ]).map((lib, idx) => (
+                  <div key={lib.name + idx} className="blueprint-card p-4 border-primary/10 bg-primary/[0.02] flex items-center justify-between group">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">{lib.name.replace(/_/g, ' ')}</span>
+                    <span className="text-[8px] font-mono text-muted-foreground/40">V{lib.version || "1.0.0"}</span>
                   </div>
                 ))}
               </div>

@@ -82,7 +82,11 @@ const Analyzer = () => {
     faults,
     corrections,
     expectedOutputs,
-    learningNotes
+    learningNotes,
+    // Simulation
+    simulate,
+    isSimulating,
+    simulationResults
   } = useCircuitAnalysis();
 
   const detectCircuitType = (input: string): string => {
@@ -96,11 +100,22 @@ const Analyzer = () => {
   const handleAnalyze = async (input: string) => {
     setDetectedCircuitType(detectCircuitType(input));
     try {
-      const result = await analyze(input);
-      const highestSeverity = result.detected_faults.length > 0 ? "high" : "low" as any;
-      addAnalysis(input, result.detected_faults.length, highestSeverity);
+      // Run both analysis and simulation in parallel
+      const [analysisResult, simResult] = await Promise.all([
+        analyze(input),
+        simulate(input)
+      ]);
+
+      const highestSeverity = analysisResult.detected_faults.length > 0 ? "high" : "low" as any;
+      addAnalysis({
+        circuitId: "new-circuit",
+        timestamp: new Date(),
+        status: highestSeverity === "high" ? "fault" : "healthy",
+        description: input,
+        severity: highestSeverity
+      });
     } catch (error) {
-      console.error("Analysis failed", error);
+      console.error("Analysis/Simulation failed:", error);
     }
   };
 
@@ -109,61 +124,98 @@ const Analyzer = () => {
   };
 
   const renderCircuitTypeAnalysis = () => {
+    // Show loading state for simulation
+    if (isSimulating) {
+      return (
+        <div className="blueprint-card p-12 border-primary/20 bg-background/50 flex flex-col items-center justify-center gap-4">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="text-[10px] font-bold uppercase tracking-widest text-primary animate-pulse">Running_Physics_Simulation...</div>
+        </div>
+      );
+    }
+
+    // Use simulation results if available, otherwise fallback to config
+    const simData = simulationResults?.data;
     const config = CIRCUIT_ANALYSIS_CONFIGS[detectedCircuitType];
 
-    if (detectedCircuitType === "rc_filter" && config) {
-      return (
-        <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
-          <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Signal_Attenuation_Matrix</h3>
-            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">RC_LOW_PASS</span>
+    if (detectedCircuitType === "rc_filter") {
+      // transform simulation data to chart format if available
+      const chartData = simData?.bode_plot ?
+        simData.bode_plot.frequencies.map((f: number, i: number) => ({
+          frequency: f,
+          magnitude_db: simData.bode_plot.magnitude_db[i],
+          phase_deg: simData.bode_plot.phase_deg[i]
+        })) :
+        config?.bodeData;
+
+      const cutoffFreq = simData?.cutoff_frequency || config?.cutoffFrequency;
+
+      if (chartData) {
+        return (
+          <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
+            <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Signal_Attenuation_Matrix</h3>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">RC_LOW_PASS</span>
+            </div>
+            <div className="p-8">
+              <BodePlot data={chartData} cutoffFrequency={cutoffFreq} />
+              {simData?.analysis_notes && (
+                <div className="mt-4 p-3 bg-primary/5 border border-primary/10 rounded text-xs text-muted-foreground font-mono">
+                  {">"} {simData.analysis_notes}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="p-8">
-            <BodePlot data={config.bodeData} cutoffFrequency={config.cutoffFrequency} />
-          </div>
-        </div>
-      );
+        );
+      }
     }
 
-    if (detectedCircuitType === "digital" && config) {
-      return (
-        <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
-          <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Logic_State_Verification</h3>
-            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">BINARY_ARRAY</span>
+    if (detectedCircuitType === "digital") {
+      const truthTable = simData?.truth_table || config?.truthTables?.AND; // Default to AND if no sim data yet
+
+      if (truthTable) {
+        return (
+          <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
+            <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Logic_State_Verification</h3>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">DIGITAL_GATE</span>
+            </div>
+            <div className="p-8">
+              <TruthTable data={truthTable} />
+              {simData?.timing_analysis && (
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-black/40 border border-primary/10">
+                    <div className="text-[8px] uppercase tracking-widest text-muted-foreground mb-1">Propagation Delay</div>
+                    <div className="text-lg font-mono text-primary">{simData.timing_analysis.propagation_delay_ns} ns</div>
+                  </div>
+                  <div className="p-3 bg-black/40 border border-primary/10">
+                    <div className="text-[8px] uppercase tracking-widest text-muted-foreground mb-1">Setup Time</div>
+                    <div className="text-lg font-mono text-primary">{simData.timing_analysis.setup_time_ns} ns</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="p-8">
-            <Tabs defaultValue="AND" className="w-full">
-              <TabsList className="grid grid-cols-3 w-full bg-primary/5 border border-primary/10 p-1 rounded-none">
-                {Object.keys(config.truthTables).map((gate) => (
-                  <TabsTrigger key={gate} value={gate} className="rounded-none text-[9px] font-bold uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                    {gate}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {Object.entries(config.truthTables).map(([gate, data]) => (
-                <TabsContent key={gate} value={gate} className="mt-6">
-                  <TruthTable data={data as any} />
-                </TabsContent>
-              ))}
-            </Tabs>
-          </div>
-        </div>
-      );
+        );
+      }
     }
 
-    if (detectedCircuitType === "power_supply" && config) {
-      return (
-        <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
-          <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Power_Thermal_Metrics</h3>
-            <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">LINEAR_REG</span>
+    if (detectedCircuitType === "power_supply") {
+      const powerData = simData?.power_analysis || config?.powerData;
+
+      if (powerData) {
+        return (
+          <div className="blueprint-card p-0 overflow-hidden border-primary/20 bg-background/50">
+            <div className="bg-primary/10 px-4 py-3 border-b border-primary/20 flex items-center justify-between">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Power_Efficiency_Analysis</h3>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10">REGULATOR_LDO</span>
+            </div>
+            <div className="p-8">
+              <PowerAnalysis data={powerData} />
+            </div>
           </div>
-          <div className="p-8">
-            <PowerAnalysis data={config.powerData} />
-          </div>
-        </div>
-      );
+        );
+      }
     }
 
     return null;

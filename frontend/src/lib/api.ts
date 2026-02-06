@@ -1,8 +1,8 @@
 
 import axios from 'axios';
 
-// Defaults to localhost:5000 (Main Backend)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Defaults to localhost:8000 (Main Backend)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const api = axios.create({
     baseURL: API_URL,
@@ -69,5 +69,17 @@ export const analyzeCircuitText = async (text: string) => {
  */
 export const generateCode = async (text: string, board: string = "esp32") => {
     const response = await api.post('/generate-code', { text, board });
+    return response.data;
+};
+
+/**
+ * Simulation Agent API
+ */
+export const simulateCircuit = async (circuit_description: string, simulation_type: string = "auto") => {
+    const response = await api.post('/api/simulation/run', {
+        circuit_description,
+        simulation_type,
+        use_cache: true
+    });
     return response.data;
 };

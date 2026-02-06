@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Send, Bot, User, Loader2, CheckCircle2, Cpu, Code, FileText } from "lucide-react";
+import { Send, Bot, User, Loader2, CheckCircle2, Cpu, Code, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import type { ChatMessage, PollOption as PollOptionType } from "@/types/project";
@@ -24,6 +24,18 @@ interface ProjectPlan {
   connections: { from: string; to: string; description: string }[];
 }
 
+// Design keywords detection
+const DESIGN_KEYWORDS = [
+  "design", "create circuit", "build circuit", "make circuit",
+  "pcb layout", "schematic", "circuit for", "led circuit",
+  "power supply", "amplifier", "voltage regulator", "motor driver"
+];
+
+const isDesignRequest = (message: string): boolean => {
+  const lower = message.toLowerCase();
+  return DESIGN_KEYWORDS.some(keyword => lower.includes(keyword));
+};
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
@@ -43,6 +55,7 @@ const ChatInterface = ({
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [useReasoning, setUseReasoning] = useState(false);
+  const [useDesignAgent, setUseDesignAgent] = useState(true); // Auto-route design requests
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [planningPhase, setPlanningPhase] = useState<"none" | "questions" | "complete">("none");
@@ -124,15 +137,41 @@ const ChatInterface = ({
       // Create session if first message
       const currentSessionId = await createSessionIfNeeded();
 
-      // Use V3 Endpoint
-      const response = await api.post("/v3/chat/message", {
-        message: userMessage.content,
-        session_id: currentSessionId,
-        mode: "auto",
-        useReasoning: useReasoning
-      });
+      // Check if this is a design request and Design Agent is enabled
+      const shouldUseDesignAgent = useDesignAgent && isDesignRequest(userMessage.content);
 
-      const data = response.data;
+      let data;
+
+      if (shouldUseDesignAgent) {
+        // Use Design Agent for circuit design requests
+        console.log("🔧 Routing to Design Agent...");
+        const response = await api.post("/api/design/generate", {
+          query: userMessage.content,
+          use_cache: true
+        });
+
+        data = {
+          id: generateUUID(),
+          content: response.data.content,
+          metadata: {
+            ...response.data.metadata,
+            agent: "design",
+            validation_status: response.data.metadata?.validation_status,
+            pcb_data: response.data.metadata?.pcb_data,
+            pcb_svg: response.data.metadata?.pcb_svg,
+          },
+          timestamp: Date.now(),
+        };
+      } else {
+        // Use regular V3 Chat Endpoint
+        const response = await api.post("/v3/chat/message", {
+          message: userMessage.content,
+          session_id: currentSessionId,
+          mode: "auto",
+          useReasoning: useReasoning
+        });
+        data = response.data;
+      }
 
       const aiMessage: ChatMessage = {
         id: data.id || generateUUID(),
@@ -150,6 +189,11 @@ const ChatInterface = ({
         if (onPlanComplete && data.metadata.plan) {
           onPlanComplete(data.metadata.plan);
         }
+      }
+
+      // Auto-show PCB option if design agent returned PCB data
+      if (data.metadata?.pcb_data || data.metadata?.pcb_svg) {
+        setPlanningPhase("complete");
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -239,6 +283,25 @@ const ChatInterface = ({
                 className={`p-4 rounded-2xl ${message.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"
                   }`}
               >
+                {/* Design Agent Badge */}
+                {message.metadata?.agent === "design" && (
+                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-primary/20">
+                    <Sparkles className="w-3 h-3 text-green-400" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-green-400">
+                      Design Agent
+                    </span>
+                    {message.metadata?.validation_status && (
+                      <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded ${message.metadata.validation_status === "PASS"
+                          ? "bg-green-500/20 text-green-400"
+                          : message.metadata.validation_status === "FAIL"
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-yellow-500/20 text-yellow-400"
+                        }`}>
+                        {message.metadata.validation_status}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="text-sm prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 prose-pre:p-2 prose-pre:rounded-lg prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground text-foreground">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {message.content}
@@ -344,7 +407,7 @@ const ChatInterface = ({
 
       {/* Input Area */}
       <div className="border-t border-border p-4">
-        <div className="flex items-center gap-2 mb-2 px-1">
+        <div className="flex items-center gap-4 mb-2 px-1 flex-wrap">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
             <input
               type="checkbox"
@@ -352,7 +415,19 @@ const ChatInterface = ({
               onChange={(e) => setUseReasoning(e.target.checked)}
               className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
             />
-            <span>Enable Deep Reasoning (Dual Agent Mode)</span>
+            <span>Deep Reasoning</span>
+          </label>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={useDesignAgent}
+              onChange={(e) => setUseDesignAgent(e.target.checked)}
+              className="rounded border-gray-300 text-green-500 focus:ring-green-500 h-4 w-4"
+            />
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Design Agent (Auto-route)
+            </span>
           </label>
         </div>
 

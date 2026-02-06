@@ -10,6 +10,29 @@ export const useCircuitAnalysis = () => {
     const [expectedOutputs, setExpectedOutputs] = useState<any[]>([]);
     const [learningNotes, setLearningNotes] = useState<any[]>([]);
 
+    // Simulation state
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [simulationResults, setSimulationResults] = useState<any>(null);
+
+    const simulate = useCallback(async (input: string) => {
+        setIsSimulating(true);
+        setSimulationResults(null);
+        try {
+            // Import dynamically to avoid circular dependencies if any
+            const { simulateCircuit } = await import("@/lib/api");
+            const result = await simulateCircuit(input);
+            if (result.success) {
+                setSimulationResults(result);
+            }
+            return result;
+        } catch (error) {
+            console.error("Simulation error:", error);
+            throw error;
+        } finally {
+            setIsSimulating(false);
+        }
+    }, []);
+
     const analyze = useCallback(async (input: string) => {
         setIsAnalyzing(true);
         setAnalysisComplete(false);
@@ -66,6 +89,10 @@ export const useCircuitAnalysis = () => {
         faults,
         corrections,
         expectedOutputs,
-        learningNotes
+        learningNotes,
+        // Simulation exports
+        simulate,
+        isSimulating,
+        simulationResults
     };
 };
