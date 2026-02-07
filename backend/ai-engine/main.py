@@ -13,10 +13,14 @@ from dotenv import load_dotenv
 # Import AI reasoning components
 from circuit_parser.models import CircuitData
 from reasoning_engine.engine import ReasoningEngine
+from spice_service import SpiceService
+from firmware_service import FirmwareService
 
 load_dotenv()
 
 app = FastAPI(title="Nexa AI Microservice", version="1.0")
+spice_service = SpiceService()
+firmware_service = FirmwareService()
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,9 +49,20 @@ class AnalyzeTextRequest(BaseModel):
 class GenerateCodeRequest(BaseModel):
     text: str
     board: Optional[str] = "esp32"
+    circuit_data: Optional[Dict[str, Any]] = None
+
+class AgentChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]]
+    current_code: str
+    board: Optional[str] = "esp32"
 
 class AskGeminiRequest(BaseModel):
     question: str
+
+class SimulateRequest(BaseModel):
+    description: Optional[str] = None
+    netlist: Optional[str] = None
 
 @app.get("/health")
 def health():
@@ -183,16 +198,27 @@ async def generate_code(request: GenerateCodeRequest):
     if not client:
         return {"code": "// AI Engine Offline. Showing generic template.\nvoid setup() {} void loop() {}"}
 
-    prompt = f"Generate Arduino C++ code for {request.board} base on: {request.text}. Return ONLY code."
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.0-flash-lite-preview-02-05', 
-            contents=prompt
-        )
-        return {"code": response.text}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    code = firmware_service.generate_firmware(
+        request.text, 
+        request.circuit_data, 
+        request.board, 
+        client
+    )
+    return {"code": code}
+
+@app.post("/code-agent/chat")
+async def code_agent_chat(request: AgentChatRequest):
+    if not client:
+        return {"response": "AI Service unavailable.", "suggested_code": None}
+
+    result = firmware_service.chat_with_agent(
+        request.message,
+        request.history,
+        request.current_code,
+        request.board,
+        client
+    )
+    return result
 
 @app.post("/ask-gemini")
 async def ask_gemini(request: AskGeminiRequest):
@@ -209,3 +235,30 @@ async def ask_gemini(request: AskGeminiRequest):
         return {"ai_response": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/simulate")
+async def simulate_circuit(request: SimulateRequest):
+    netlist = request.netlist
+    
+    # If no netlist but description provided, generate netlist using Gemini
+    if not netlist and request.description:
+        netlist = spice_service.generate_netlist_from_description(request.description, client)
+    
+    if not netlist:
+        raise HTTPException(status_code=400, detail="Either netlist or description must be provided.")
+    
+    result = spice_service.run_simulation(netlist)
+    
+    # Add AI analysis if requested and simulation was successful
+    if result.get("success") and (request.description or netlist):
+        analysis = spice_service.analyze_results(
+            result.get("raw_output", ""), 
+            request.description or "the circuit", 
+            client
+        )
+        result["ai_analysis"] = analysis
+        
+    return {
+        "netlist": netlist,
+        "result": result
+    }

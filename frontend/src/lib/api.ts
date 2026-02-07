@@ -67,7 +67,23 @@ export const analyzeCircuitText = async (text: string) => {
 /**
  * Code Generation API
  */
-export const generateCode = async (text: string, board: string = "esp32") => {
-    const response = await api.post('/generate-code', { text, board });
+export const generateCode = async (text: string, board: string = "esp32", circuitData?: any) => {
+    const response = await api.post('/generate-code', { text, board, circuitData });
+    return response.data;
+};
+
+/**
+ * Code Agent Chat API
+ */
+export const codeAgentChat = async (message: string, history: any[], currentCode: string, board: string = "esp32") => {
+    const response = await api.post('/code-agent/chat', { message, history, currentCode, board });
+    return response.data;
+};
+
+/**
+ * SPICE Simulation API
+ */
+export const simulate = async (description?: string, netlist?: string) => {
+    const response = await api.post('/simulate', { description, netlist });
     return response.data;
 };

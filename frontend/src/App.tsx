@@ -21,6 +21,7 @@ import SchematicEditor from "./pages/SchematicEditor";
 import Troubleshoot from "./pages/Troubleshoot";
 import NotFound from "./pages/NotFound";
 import AITestLab from "./pages/AITestLab";
+import SimulationWorkspace from "./pages/SimulationWorkspace";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/schematic" element={<SchematicEditor />} />
               <Route path="/troubleshoot" element={<Troubleshoot />} />
               <Route path="/test-lab" element={<AITestLab />} />
+              <Route path="/simulation" element={<SimulationWorkspace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

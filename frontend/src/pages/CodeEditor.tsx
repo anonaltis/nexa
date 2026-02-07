@@ -9,6 +9,23 @@ import { toast } from "sonner";
 import CodeMirror from "@uiw/react-codemirror";
 import { cpp } from "@codemirror/lang-cpp";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import {
+  MessageSquare,
+  Send,
+  Terminal,
+  Cpu,
+  Layers,
+  Sparkles,
+  ChevronRight,
+  X,
+  Play,
+  RotateCcw
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { generateCode, codeAgentChat } from "@/lib/api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const CodeEditor = () => {
   const { user } = useAuth();
@@ -16,26 +33,66 @@ const CodeEditor = () => {
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get("project");
 
-  const [code, setCode] = useState(`// Firmware Studio v4.0
-// Initializing System Parameters...
+  const [code, setCode] = useState(`// Firmware Studio v4.5
+// Neural_Buffer_Locked
 
 #include <Arduino.h>
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);
-  Serial.println("SYSTEM_CORE_INITIALIZED");
 }
 
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);
+  // Awaiting AI synthesis...
 }`);
 
   const [isUploading, setIsUploading] = useState(false);
+  const [board, setBoard] = useState("esp32");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isAgentResponding, setIsAgentResponding] = useState(false);
+
   const currentProject = projectId ? getProject(projectId) : null;
+
+  const handleGenerate = async () => {
+    if (!inputMessage) return;
+    setIsGenerating(true);
+    setMessages(prev => [...prev, { role: "user", content: inputMessage }]);
+    const currentInput = inputMessage;
+    setInputMessage("");
+
+    try {
+      const response = await generateCode(currentInput, board, currentProject?.pcbDiagram);
+      setCode(response.code);
+      setMessages(prev => [...prev, { role: "assistant", content: "I've generated the firmware core based on your specification. How else can I assist?" }]);
+      toast.success("CORE_SYNTHESIS_COMPLETE");
+    } catch (error) {
+      toast.error("SYNTHESIS_FAILURE");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleAgentChat = async () => {
+    if (!inputMessage || isAgentResponding) return;
+    const userMsg = inputMessage;
+    setInputMessage("");
+    setMessages(prev => [...prev, { role: "user", content: userMsg }]);
+    setIsAgentResponding(true);
+
+    try {
+      const response = await codeAgentChat(userMsg, messages, code, board);
+      setMessages(prev => [...prev, { role: "assistant", content: response.response }]);
+      if (response.suggested_code) {
+        // Option to apply code? For now just show in chat
+      }
+    } catch (error) {
+      toast.error("COMMUNICATION_ERROR");
+    } finally {
+      setIsAgentResponding(false);
+    }
+  };
 
   const handleUpload = async () => {
     setIsUploading(true);
@@ -138,54 +195,115 @@ void loop() {
             </div>
           </div>
 
-          {/* Sidebar (3/12) */}
-          <div className="lg:col-span-3 space-y-8 flex flex-col overflow-y-auto">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <span className="h-0.5 w-3 bg-primary/40" />
-                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Library_Registry</h2>
+          {/* Sidebar (3/12) - Code Agent & Hardware Context */}
+          <div className="lg:col-span-3 flex flex-col gap-6 h-full min-h-0">
+            {/* Code Agent Chat */}
+            <div className="flex-1 blueprint-card p-0 flex flex-col border-primary/20 bg-primary/[0.02] overflow-hidden">
+              <div className="bg-primary/10 px-4 py-2 border-b border-primary/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-primary">Neural_Code_Agent</h3>
+                </div>
+                <div className="flex gap-1">
+                  <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
+                  <div className="h-1 w-1 rounded-full bg-primary/40" />
+                </div>
               </div>
-              <div className="grid gap-2">
-                {["Arduino_Core", "WiFi_HAL", "ESP32_GPIO", "HTTP_Client"].map(lib => (
-                  <div key={lib} className="blueprint-card p-4 border-primary/10 bg-primary/[0.02] flex items-center justify-between group">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">{lib}</span>
-                    <span className="text-[8px] font-mono text-muted-foreground/40">V1.2.0</span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="blueprint-card p-6 border-primary/20 bg-primary/5 space-y-6 flex-1">
-              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                BOM_Synchronization
-              </h4>
-              <div className="space-y-4">
-                {currentProject?.description ? (
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase leading-relaxed opacity-60">
-                    {currentProject.description}
-                  </p>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-3">
+                    <MessageSquare className="h-8 w-8 text-primary" />
+                    <p className="text-[8px] font-bold uppercase tracking-[0.2em] leading-relaxed">
+                      AWAITING_FIRMWARE_SPECIFICATIONS_OR_AGENT_QUERY
+                    </p>
+                  </div>
                 ) : (
-                  <div className="text-center py-6 opacity-40">
-                    <span className="text-[9px] font-bold uppercase tracking-widest">No_Project_Linked</span>
+                  messages.map((m, i) => (
+                    <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[90%] p-3 text-[10px] font-medium leading-relaxed ${m.role === 'user'
+                          ? 'bg-primary/20 text-foreground rounded-l-lg rounded-tr-lg border border-primary/10'
+                          : 'bg-neutral-900 text-muted-foreground rounded-r-lg rounded-tl-lg border border-white/5'
+                        }`}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {m.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {isAgentResponding && (
+                  <div className="flex gap-1 p-2 opacity-50">
+                    <div className="h-1 w-1 bg-primary rounded-full animate-bounce" />
+                    <div className="h-1 w-1 bg-primary rounded-full animate-bounce delay-75" />
+                    <div className="h-1 w-1 bg-primary rounded-full animate-bounce delay-150" />
                   </div>
                 )}
               </div>
 
-              <div className="pt-6 border-t border-primary/10">
-                <h5 className="text-[8px] font-black uppercase tracking-[0.2em] mb-4 text-muted-foreground">IO_Hardware_Map</h5>
-                <div className="space-y-2">
-                  {[
-                    { pin: "D13", label: "INTERNAL_LED" },
-                    { pin: "A0", label: "VDD_SENSE" },
-                    { pin: "TX0", label: "SER_UART" }
-                  ].map(io => (
-                    <div key={io.pin} className="flex justify-between text-[9px] font-mono">
-                      <span className="text-primary font-bold">{io.pin}</span>
-                      <span className="text-muted-foreground/60">{io.label}</span>
-                    </div>
-                  ))}
+              <div className="p-3 border-t border-primary/10 bg-black/20">
+                <div className="relative">
+                  <Input
+                    placeholder="Specify firmware reqs..."
+                    className="bg-neutral-900 border-primary/20 text-[10px] h-9 pr-10 focus-visible:ring-primary/30"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (messages.length === 0 ? handleGenerate() : handleAgentChat())}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => (messages.length === 0 ? handleGenerate() : handleAgentChat())}
+                    disabled={isGenerating || isAgentResponding}
+                    className="absolute right-1 top-1 h-7 w-7 text-primary hover:bg-primary/10"
+                  >
+                    <Send className="h-3 w-3" />
+                  </Button>
                 </div>
+              </div>
+            </div>
+
+            {/* Hardware Context Panel */}
+            <div className="h-48 blueprint-card p-0 border-primary/20 bg-primary/5 overflow-hidden flex flex-col">
+              <div className="bg-primary/10 px-4 py-2 border-b border-primary/20 flex items-center justify-between">
+                <h4 className="text-[9px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                  <Cpu className="h-3 w-3" />
+                  Hardware_Context
+                </h4>
+                <Select value={board} onValueChange={setBoard}>
+                  <SelectTrigger className="h-5 w-24 bg-black/40 border-primary/20 text-[8px] font-bold uppercase p-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-neutral-900 border-primary/30 text-[9px]">
+                    <SelectItem value="esp32">ESP32 Core</SelectItem>
+                    <SelectItem value="arduino_uno">Uno Rev3</SelectItem>
+                    <SelectItem value="stm32">STM32 HAL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                {currentProject?.pcbDiagram ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 opacity-60">
+                      <Layers className="h-3 w-3 text-primary" />
+                      <span className="text-[8px] font-bold uppercase tracking-widest text-primary">Linked_Diagram_Detected</span>
+                    </div>
+                    <div className="space-y-1">
+                      {(currentProject.pcbDiagram as any).components?.slice(0, 5).map((comp: any) => (
+                        <div key={comp.id} className="flex justify-between text-[8px] font-mono border-b border-primary/5 pb-1">
+                          <span className="text-muted-foreground">{comp.label}</span>
+                          <span className="text-primary">{comp.type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-30 gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="text-[8px] font-bold uppercase tracking-widest">No_Hardware_Link</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

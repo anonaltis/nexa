@@ -19,6 +19,7 @@ import {
   Save,
   Loader2,
   LayoutDashboard,
+  Play,
 } from "lucide-react";
 import {
   Select,
@@ -443,6 +444,12 @@ const PCBViewer = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Button asChild variant="outline" className="border-primary/30 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
+              <Link to="/simulation">
+                <Play className="h-3 w-3 mr-2" />
+                Run_Simulation
+              </Link>
+            </Button>
             <PCBGenerationDialog onPCBGenerated={handlePCBGenerated} />
           </div>
         </div>

@@ -20,11 +20,20 @@ export const analyzeCircuit = async (req: Request, res: Response, next: NextFunc
 };
 
 export const generateCode = async (req: Request, res: Response, next: NextFunction) => {
-    const { text, board } = req.body;
+    const { text, board, circuitData } = req.body;
     if (!text) return next(new Error('MISSING_DATA'));
     try {
-        const code = await AIService.generateCode(text, board || 'esp32');
+        const code = await AIService.generateCode(text, board || 'esp32', circuitData);
         res.status(200).json({ code });
+    } catch (error) { next(error); }
+};
+
+export const codeAgentChat = async (req: Request, res: Response, next: NextFunction) => {
+    const { message, history, currentCode, board } = req.body;
+    if (!message) return next(new Error('MISSING_MESSAGE'));
+    try {
+        const response = await AIService.codeAgentChat(message, history || [], currentCode, board || 'esp32');
+        res.status(200).json(response);
     } catch (error) { next(error); }
 };
 
@@ -33,6 +42,14 @@ export const chatMessage = async (req: Request, res: Response, next: NextFunctio
     if (!content) return next(new Error('MISSING_DATA'));
     try {
         const response = await AIService.chatMessage(content, projectId);
+        res.status(200).json(response);
+    } catch (error) { next(error); }
+};
+
+export const simulateCircuit = async (req: Request, res: Response, next: NextFunction) => {
+    const { description, netlist } = req.body;
+    try {
+        const response = await AIService.simulateCircuit(description, netlist);
         res.status(200).json(response);
     } catch (error) { next(error); }
 };

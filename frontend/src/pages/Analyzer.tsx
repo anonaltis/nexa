@@ -11,7 +11,10 @@ import BodePlot from "@/components/analysis/BodePlot";
 import TruthTable from "@/components/analysis/TruthTable";
 import PowerAnalysis from "@/components/analysis/PowerAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useCircuitAnalysis } from "@/hooks/useCircuitAnalysis";
+import { Link } from "react-router-dom";
+import { Play } from "lucide-react";
 
 // Circuit type configurations
 const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
@@ -196,6 +199,13 @@ const Analyzer = () => {
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Buffer_Load</span>
               <span className="text-xs font-bold text-primary uppercase">{history.length} Units</span>
             </div>
+            <div className="h-10 w-px bg-primary/20" />
+            <Link to="/simulation">
+              <Button variant="outline" className="border-primary/30 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
+                <Play className="h-3 w-3 mr-2" />
+                Run_Simulation
+              </Button>
+            </Link>
           </div>
         </div>
 

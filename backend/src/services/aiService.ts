@@ -43,9 +43,9 @@ export class AIService {
     /**
      * Code Generation
      */
-    static async generateCode(text: string, board: string): Promise<string> {
+    static async generateCode(text: string, board: string, circuitData?: any): Promise<string> {
         try {
-            const response = await this.axiosInstance.post('/generate-code', { text, board });
+            const response = await this.axiosInstance.post('/generate-code', { text, board, circuit_data: circuitData });
             return response.data.code;
         } catch (error) {
             this.handleAxiosError(error);
@@ -59,6 +59,32 @@ export class AIService {
     static async chatMessage(content: string, projectId?: string): Promise<any> {
         try {
             const response = await this.axiosInstance.post('/chat/message', { content, projectId });
+            return response.data;
+        } catch (error) {
+            this.handleAxiosError(error);
+            throw error;
+        }
+    }
+
+    /**
+     * SPICE Simulation
+     */
+    static async simulateCircuit(description?: string, netlist?: string): Promise<any> {
+        try {
+            const response = await this.axiosInstance.post('/simulate', { description, netlist });
+            return response.data;
+        } catch (error) {
+            this.handleAxiosError(error);
+            throw error;
+        }
+    }
+
+    /**
+     * Code Agent Chat
+     */
+    static async codeAgentChat(message: string, history: any[], currentCode: string, board: string): Promise<any> {
+        try {
+            const response = await this.axiosInstance.post('/code-agent/chat', { message, history, current_code: currentCode, board });
             return response.data;
         } catch (error) {
             this.handleAxiosError(error);
