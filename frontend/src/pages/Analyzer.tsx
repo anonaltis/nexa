@@ -85,7 +85,8 @@ const Analyzer = () => {
     faults,
     corrections,
     expectedOutputs,
-    learningNotes
+    learningNotes,
+    circuitInput
   } = useCircuitAnalysis();
 
   const detectCircuitType = (input: string): string => {
@@ -200,7 +201,7 @@ const Analyzer = () => {
               <span className="text-xs font-bold text-primary uppercase">{history.length} Units</span>
             </div>
             <div className="h-10 w-px bg-primary/20" />
-            <Link to="/simulation">
+            <Link to={`/simulation?description=${encodeURIComponent(circuitInput || "")}`}>
               <Button variant="outline" className="border-primary/30 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
                 <Play className="h-3 w-3 mr-2" />
                 Run_Simulation

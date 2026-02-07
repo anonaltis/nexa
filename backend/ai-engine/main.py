@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from datetime import datetime
 import uuid
 import os
@@ -15,12 +15,16 @@ from circuit_parser.models import CircuitData
 from reasoning_engine.engine import ReasoningEngine
 from spice_service import SpiceService
 from firmware_service import FirmwareService
+from vision_service import VisionService
+from component_service import ComponentService
 
 load_dotenv()
 
 app = FastAPI(title="Nexa AI Microservice", version="1.0")
 spice_service = SpiceService()
 firmware_service = FirmwareService()
+vision_service = VisionService()
+component_service = ComponentService()
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +63,14 @@ class AgentChatRequest(BaseModel):
 
 class AskGeminiRequest(BaseModel):
     question: str
+
+class AnalyzeImageRequest(BaseModel):
+    image: str  # Base64 encoded image
+    type: Optional[str] = "schematic"  # 'pcb' or 'schematic'
+
+class RecommendComponentsRequest(BaseModel):
+    requirements: str
+    context: Optional[Dict[str, Any]] = None
 
 class SimulateRequest(BaseModel):
     description: Optional[str] = None
@@ -233,6 +245,43 @@ async def ask_gemini(request: AskGeminiRequest):
             contents=prompt
         )
         return {"ai_response": response.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analyze-image")
+async def analyze_circuit_image(request: AnalyzeImageRequest):
+    if not client:
+        return {
+            "components": [],
+            "supplies": [],
+            "topology_summary": "AI Engine Offline. Vision analysis unavailable."
+        }
+
+    try:
+        result = vision_service.analyze_circuit_image(
+            request.image, 
+            request.type, 
+            client
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/recommend-components")
+async def recommend_components(request: RecommendComponentsRequest):
+    if not client:
+        return {
+            "recommendations": [],
+            "design_notes": "AI Engine Offline. Recommendations unavailable."
+        }
+
+    try:
+        result = component_service.recommend_components(
+            request.requirements, 
+            request.context, 
+            client
+        )
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

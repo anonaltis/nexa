@@ -444,11 +444,16 @@ const PCBViewer = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Button asChild variant="outline" className="border-primary/30 text-[10px] font-bold uppercase tracking-widest h-10 px-4">
-              <Link to="/simulation">
-                <Play className="h-3 w-3 mr-2" />
-                Run_Simulation
-              </Link>
+            <Button
+              variant="outline"
+              className="border-primary/30 text-[10px] font-bold uppercase tracking-widest h-10 px-4"
+              onClick={() => {
+                const description = `PCB Layout: ${components.map(c => c.label).join(", ")}. Connections: ${traces.length} traces.`;
+                window.location.href = `/simulation?description=${encodeURIComponent(description)}`;
+              }}
+            >
+              <Play className="h-3 w-3 mr-2" />
+              Run_Simulation
             </Button>
             <PCBGenerationDialog onPCBGenerated={handlePCBGenerated} />
           </div>

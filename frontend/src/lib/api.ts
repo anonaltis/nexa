@@ -52,7 +52,7 @@ export const chatWithAI = async (content: string, projectId?: string) => {
  * Circuit Analysis API (Structured)
  */
 export const analyzeCircuit = async (circuitData: any) => {
-    const response = await api.post('/analyze', circuitData);
+    const response = await api.post('/analyze-text', circuitData);
     return response.data;
 };
 
@@ -77,6 +77,22 @@ export const generateCode = async (text: string, board: string = "esp32", circui
  */
 export const codeAgentChat = async (message: string, history: any[], currentCode: string, board: string = "esp32") => {
     const response = await api.post('/code-agent/chat', { message, history, currentCode, board });
+    return response.data;
+};
+
+/**
+ * Vision Analysis API
+ */
+export const analyzeImage = async (image: string, type: string = "schematic") => {
+    const response = await api.post('/analyze-image', { image, type });
+    return response.data;
+};
+
+/**
+ * Component Recommendations API
+ */
+export const recommendComponents = async (requirements: string, context?: any) => {
+    const response = await api.post('/recommend-components', { requirements, context });
     return response.data;
 };
 

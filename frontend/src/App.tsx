@@ -22,6 +22,7 @@ import Troubleshoot from "./pages/Troubleshoot";
 import NotFound from "./pages/NotFound";
 import AITestLab from "./pages/AITestLab";
 import SimulationWorkspace from "./pages/SimulationWorkspace";
+import VisionWorkspace from "./pages/VisionWorkspace";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,8 @@ const App = () => (
               <Route path="/troubleshoot" element={<Troubleshoot />} />
               <Route path="/test-lab" element={<AITestLab />} />
               <Route path="/simulation" element={<SimulationWorkspace />} />
+              <Route path="/vision" element={<VisionWorkspace />} />
+              <Route path="/troubleshoot" element={<Troubleshoot />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -7,7 +7,7 @@ import projectRoutes from './routes/projectRoutes';
 import schematicRoutes from './routes/schematicRoutes';
 import componentRoutes from './routes/componentRoutes';
 import { authMiddleware } from './middleware/auth';
-import { askPCB, analyzeCircuit, generateCode, chatMessage, simulateCircuit, codeAgentChat } from './controllers/pcbController';
+import { askPCB, analyzeCircuit, generateCode, chatMessage, simulateCircuit, codeAgentChat, analyzeImage, recommendComponents } from './controllers/pcbController';
 import { errorHandler } from './utils/errorHandler';
 
 dotenv.config();
@@ -48,6 +48,10 @@ app.post('/analyze-text', authMiddleware, (req, res, next) => {
 app.post('/simulate', authMiddleware, simulateCircuit);
 
 app.post('/code-agent/chat', authMiddleware, codeAgentChat);
+
+app.post('/analyze-image', authMiddleware, analyzeImage);
+
+app.post('/recommend-components', authMiddleware, recommendComponents);
 
 app.post('/generate-code', authMiddleware, generateCode);
 

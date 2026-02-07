@@ -37,6 +37,24 @@ export const codeAgentChat = async (req: Request, res: Response, next: NextFunct
     } catch (error) { next(error); }
 };
 
+export const analyzeImage = async (req: Request, res: Response, next: NextFunction) => {
+    const { image, type } = req.body;
+    if (!image) return next(new Error('MISSING_IMAGE'));
+    try {
+        const result = await AIService.analyzeImage(image, type || 'schematic');
+        res.status(200).json(result);
+    } catch (error) { next(error); }
+};
+
+export const recommendComponents = async (req: Request, res: Response, next: NextFunction) => {
+    const { requirements, context } = req.body;
+    if (!requirements) return next(new Error('MISSING_REQUIREMENTS'));
+    try {
+        const result = await AIService.recommendComponents(requirements, context);
+        res.status(200).json(result);
+    } catch (error) { next(error); }
+};
+
 export const chatMessage = async (req: Request, res: Response, next: NextFunction) => {
     const { content, projectId } = req.body;
     if (!content) return next(new Error('MISSING_DATA'));

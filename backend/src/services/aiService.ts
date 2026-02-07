@@ -92,6 +92,32 @@ export class AIService {
         }
     }
 
+    /**
+     * Vision Analysis (Image-to-Circuit)
+     */
+    static async analyzeImage(image: string, type: string): Promise<any> {
+        try {
+            const response = await this.axiosInstance.post('/analyze-image', { image, type });
+            return response.data;
+        } catch (error) {
+            this.handleAxiosError(error);
+            throw error;
+        }
+    }
+
+    /**
+     * Component Recommendations
+     */
+    static async recommendComponents(requirements: string, context?: any): Promise<any> {
+        try {
+            const response = await this.axiosInstance.post('/recommend-components', { requirements, context });
+            return response.data;
+        } catch (error) {
+            this.handleAxiosError(error);
+            throw error;
+        }
+    }
+
     private static handleAxiosError(error: any) {
         if (axios.isAxiosError(error)) {
             const axiosError = error as AxiosError;

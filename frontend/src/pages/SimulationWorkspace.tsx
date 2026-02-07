@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import WaveformViewer from "@/components/simulation/WaveformViewer";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useSearchParams } from "react-router-dom";
 import { simulate } from "@/lib/api";
 
 const SimulationWorkspace = () => {
@@ -17,6 +18,22 @@ const SimulationWorkspace = () => {
     const [isSimulating, setIsSimulating] = useState(false);
     const [results, setResults] = useState<any>(null);
     const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const descParam = searchParams.get("description");
+        const netlistParam = searchParams.get("netlist");
+
+        if (descParam) setDescription(descParam);
+        if (netlistParam) setNetlist(netlistParam);
+
+        if (descParam || netlistParam) {
+            // Delay slightly to ensure states are set
+            setTimeout(() => {
+                handleSimulate();
+            }, 500);
+        }
+    }, [searchParams]);
 
     const handleSimulate = async () => {
         if (!description && !netlist) {

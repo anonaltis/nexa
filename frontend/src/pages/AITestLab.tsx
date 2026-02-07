@@ -48,7 +48,7 @@ const TEST_SECTIONS: TestSection[] = [
         id: "chat-led-debug",
         name: "LED_CIRCUIT_DEBUG",
         description: "Expects analyze_circuit trigger.",
-        endpoint: "/v3/chat/message",
+        endpoint: "/chat/message",
         method: "POST",
         body: {
           message: "My red LED connected to 5V with a 10k ohm resistor is not lighting up. What's wrong?",
@@ -61,7 +61,7 @@ const TEST_SECTIONS: TestSection[] = [
         id: "chat-concept",
         name: "THEORY_QUERY",
         description: "Expects direct text response.",
-        endpoint: "/v3/chat/message",
+        endpoint: "/chat/message",
         method: "POST",
         body: {
           message: "What is Ohm's Law and why is it important?",
@@ -81,14 +81,10 @@ const TEST_SECTIONS: TestSection[] = [
         id: "analyze-led",
         name: "FAULT_DETECTION_SCAN",
         description: "Checks for insufficient current in LED loop.",
-        endpoint: "/v3/chat/analyze",
+        endpoint: "/analyze-text",
         method: "POST",
         body: {
-          description: "My red LED is not lighting up. The circuit has 5V, a 10k resistor and a red LED.",
-          components: ["resistor 10k", "red LED"],
-          supply_voltage: 5,
-          session_id: "test-analyze-led-" + Date.now(),
-          user_id: "test-user",
+          text: "My red LED is not lighting up. The circuit has 5V, a 10k resistor and a red LED.",
         },
       },
     ],
@@ -252,8 +248,8 @@ const AITestLab = () => {
                         <div className="flex items-center justify-between p-5 border-b border-primary/5 bg-primary/[0.02] group-hover:bg-primary/5 transition-colors">
                           <div className="flex items-center gap-6">
                             <div className={`h-3 w-3 ${result?.status === 'pass' ? 'bg-success' :
-                                result?.status === 'fail' ? 'bg-destructive' :
-                                  result?.status === 'running' ? 'bg-blue-400 animate-pulse' : 'bg-muted/10'
+                              result?.status === 'fail' ? 'bg-destructive' :
+                                result?.status === 'running' ? 'bg-blue-400 animate-pulse' : 'bg-muted/10'
                               }`} />
                             <div>
                               <div className="text-[12px] font-black uppercase tracking-wider group-hover:text-primary transition-colors">{test.name}</div>

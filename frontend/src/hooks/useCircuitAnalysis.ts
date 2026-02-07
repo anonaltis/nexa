@@ -9,8 +9,10 @@ export const useCircuitAnalysis = () => {
     const [corrections, setCorrections] = useState<any[]>([]);
     const [expectedOutputs, setExpectedOutputs] = useState<any[]>([]);
     const [learningNotes, setLearningNotes] = useState<any[]>([]);
+    const [circuitInput, setCircuitInput] = useState<string>("");
 
     const analyze = useCallback(async (input: string) => {
+        setCircuitInput(input);
         setIsAnalyzing(true);
         setAnalysisComplete(false);
 
@@ -66,6 +68,7 @@ export const useCircuitAnalysis = () => {
         faults,
         corrections,
         expectedOutputs,
-        learningNotes
+        learningNotes,
+        circuitInput
     };
 };
