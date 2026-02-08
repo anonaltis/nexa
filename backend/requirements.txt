@@ -36,13 +36,13 @@ email-validator==2.3.0
 fastapi==0.128.0
 fsspec==2026.1.0
 geometry-msgs==5.3.6
-google-ai-generativelanguage==0.6.15
+google-ai-generativelanguage
 google-api-core==2.29.0
 google-api-python-client==2.188.0
 google-auth==2.48.0rc0
 google-auth-httplib2==0.3.0
 google-genai==1.60.0
-google-generativeai==0.3.2
+google-generativeai
 googleapis-common-protos==1.72.0
 gps-msgs==2.1.1
 grpcio==1.76.0

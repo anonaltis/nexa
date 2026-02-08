@@ -16,24 +16,27 @@ echo -e "${BLUE}🚀 Starting Nexa Platform (Relocated Backend)...${NC}"
 
 # Function to handle cleanup on exit
 cleanup() {
-    echo -e "\n${RED}🛑 Stopping services...${NC}"
-    kill $AI_ENGINE_PID $MAIN_BACKEND_PID $FRONTEND_PID 2>/dev/null
+    echo -e "\n${RED}🛑 Stopping services and clearing ports...${NC}"
+    # Kill all child processes of this script
+    pkill -P $$ 2>/dev/null
+    # Force kill processes on specific used ports to avoid "Address already in use"
+    fuser -k 8000/tcp 5000/tcp 5173/tcp 8080/tcp 8081/tcp 8082/tcp 2>/dev/null
     exit
 }
 
 trap cleanup SIGINT SIGTERM
 
-# Start AI Microservice (Python)
-echo -e "${GREEN}📡 Starting AI Microservice (Python)...${NC}"
-cd "$AI_ENGINE_DIR" || exit
+# Start Unified Backend (Python)
+echo -e "${GREEN}📡 Starting Unified Backend (Python)...${NC}"
+cd "$MAIN_BACKEND_DIR" || exit
 
-if [ ! -d "venv" ]; then
+if [ ! -d ".venv" ]; then
     echo -e "${YELLOW}⚙️ Setting up Python venv...${NC}"
-    python3 -m venv venv
-    ./venv/bin/pip install -r requirements.txt
+    python3 -m venv .venv
+    ./.venv/bin/pip install -r requirements.txt
 fi
 
-./venv/bin/uvicorn main:app --reload --port 8000 &
+./.venv/bin/uvicorn api.main:app --reload --port 8000 &
 AI_ENGINE_PID=$!
 
 # Start Main Backend (Node.js)
