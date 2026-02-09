@@ -17,6 +17,8 @@ from api.schematics import router as schematics_router
 from api.design import router as design_router
 from api.simulation import router as simulation_router
 from api.diagnostics import router as diagnostics_router, AnalyzeTextRequest, analyze_circuit_text
+from api.orchestrator import router as orchestrator_router
+from api.vision import router as vision_router
 from db import db
 
 @asynccontextmanager
@@ -33,8 +35,10 @@ app = FastAPI(title="CircuitSathi Backend", version="1.0", lifespan=lifespan)
 origins = [
     "http://localhost:5173",
     "http://localhost:3000",
+    "http://localhost:8080",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080",
 ]
 
 app.add_middleware(
@@ -53,12 +57,14 @@ app.include_router(chat_v2_router, prefix="/v2/chat", tags=["chat-v2"])
 app.include_router(chat_v3_router)  # v3 has its own prefix: /api/v3/chat
 app.include_router(chat_history_router, prefix="/chat", tags=["chat-history"])
 app.include_router(code_router, prefix="/code", tags=["code"])
-app.include_router(pcb_router, prefix="/pcb", tags=["pcb"])
+app.include_router(pcb_router)  # PCB has its own prefix: /api/pcb
 app.include_router(components_router, prefix="/components", tags=["components"])
-app.include_router(schematics_router, prefix="/schematics", tags=["schematics"])
+app.include_router(schematics_router)
 app.include_router(design_router)  # Design has its own prefix: /api/design
 app.include_router(simulation_router)  # Simulation has its own prefix: /api/simulation
 app.include_router(diagnostics_router)  # Diagnostics has its own prefix: /api/diagnostics
+app.include_router(orchestrator_router)  # Orchestrator: /api/orchestrator
+app.include_router(vision_router)  # Vision: /api/vision
 
 @app.post("/analyze-text")
 async def top_level_analyze_text(request: AnalyzeTextRequest):

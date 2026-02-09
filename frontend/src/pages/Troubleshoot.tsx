@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 interface TroubleshootingHistory {
     id: string;
@@ -13,23 +14,27 @@ interface TroubleshootingHistory {
 }
 
 const Troubleshoot = () => {
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
     const [question, setQuestion] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [history, setHistory] = useState<TroubleshootingHistory[]>([]);
     const [currentAnswer, setCurrentAnswer] = useState<string | null>(null);
+    const hasAutoSwitched = useRef(false);
 
-    const handleAsk = async () => {
-        if (!question.trim() || isLoading) return;
+    const handleAsk = async (explicitQuestion?: string) => {
+        const q = explicitQuestion || question;
+        if (!q.trim() || isLoading) return;
         setIsLoading(true);
         setCurrentAnswer("");
 
         try {
-            const response = await api.post("/api/pcb/ask", { question });
+            const response = await api.post("/api/pcb/ask", { question: q });
             const answer = response.data.ai_response;
             setCurrentAnswer(answer);
             const newEntry: TroubleshootingHistory = {
                 id: crypto.randomUUID(),
-                question,
+                question: q,
                 answer,
                 timestamp: new Date(),
             };
@@ -42,6 +47,25 @@ const Troubleshoot = () => {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        const transferId = searchParams.get("transfer");
+        let initialQuestion = location.state?.question;
+
+        if (transferId) {
+            const storedData = localStorage.getItem(`nexa_lab_data_${transferId}`);
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                if (data.question) initialQuestion = data.question;
+                localStorage.removeItem(`nexa_lab_data_${transferId}`);
+            }
+        }
+
+        if (initialQuestion && !hasAutoSwitched.current) {
+            hasAutoSwitched.current = true;
+            handleAsk(initialQuestion);
+        }
+    }, [location.state, searchParams]);
 
     return (
         <Layout>
@@ -117,6 +141,20 @@ const Troubleshoot = () => {
                                             </button>
                                         ))}
                                     </div>
+
+                                    {isLoading && (
+                                        <div className="flex items-center gap-3 animate-pulse pt-2 px-1">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">
+                                                Neural_Processing_In_Progress...
+                                            </span>
+                                            <div className="flex gap-1 ml-auto">
+                                                <div className="h-1 w-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                                <div className="h-1 w-1 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                                <div className="h-1 w-1 bg-primary/40 rounded-full animate-bounce" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -185,7 +223,7 @@ const Troubleshoot = () => {
                                     { label: "ENGINE_STATE", val: "NOMINAL" },
                                     { label: "NEURAL_NODES", val: "ACTIVE" },
                                     { label: "SYNC_QUALITY", val: "0.982" },
-                                    { label: "MODEL", val: "GEMINI_2_PRO" }
+                                    { label: "MODEL", val: "GEMINI_3_FLASH" }
                                 ].map(spec => (
                                     <div key={spec.label} className="flex justify-between items-center border-b border-primary/5 pb-2">
                                         <span className="text-[9px] font-bold text-muted-foreground uppercase">{spec.label}</span>
@@ -197,7 +235,7 @@ const Troubleshoot = () => {
                     </div>
                 </div>
             </div>
-        </Layout>
+        </Layout >
     );
 };
 

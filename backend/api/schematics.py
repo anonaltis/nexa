@@ -9,7 +9,7 @@ from auth_utils import get_current_user
 from db import db
 from models import Schematic, SchematicCreate, SchematicUpdate, SchematicNode, SchematicWire
 
-router = APIRouter()
+router = APIRouter(prefix="/api/schematics", tags=["schematics"])
 
 
 class SchematicResponse(BaseModel):
@@ -54,8 +54,8 @@ async def create_schematic(
         "description": schematic.description,
         "project_id": schematic.project_id,
         "user_id": current_user,
-        "nodes": [],
-        "wires": [],
+        "nodes": [n.dict() for n in schematic.nodes] if schematic.nodes else [],
+        "wires": [w.dict() for w in schematic.wires] if schematic.wires else [],
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }

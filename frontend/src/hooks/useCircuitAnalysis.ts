@@ -38,7 +38,7 @@ export const useCircuitAnalysis = () => {
         setAnalysisComplete(false);
 
         try {
-            const response = await analyzeCircuitText(input);
+            const response = await analyzeCircuitText(input, true);
             const { structured_analysis } = response;
 
             // Map backend response to frontend UI

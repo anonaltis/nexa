@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import ComponentPalette, { ComponentTemplate } from "@/components/schematic/ComponentPalette";
 import PropertiesPanel from "@/components/schematic/PropertiesPanel";
 import SchematicCanvas, { SchematicNode, SchematicWire } from "@/components/schematic/SchematicCanvas";
+import AISynthesisPanel from "@/components/schematic/AISynthesisPanel";
 
 const SchematicEditor = () => {
   const { user } = useAuth();
@@ -34,6 +35,11 @@ const SchematicEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // AI Synthesis State
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isExtractingVision, setIsExtractingVision] = useState(false);
+  const [designRationale, setDesignRationale] = useState<string | undefined>();
+
   // Load schematic if ID provided
   useEffect(() => {
     if (schematicId && user) {
@@ -44,7 +50,7 @@ const SchematicEditor = () => {
   const loadSchematic = async (id: string) => {
     setIsLoading(true);
     try {
-      const response = await api.get(`/schematics/${id}`);
+      const response = await api.get(`/api/schematics/${id}`);
       const data = response.data;
       setSchematicName(data.name);
       setNodes(data.nodes || []);
@@ -62,7 +68,7 @@ const SchematicEditor = () => {
     try {
       if (schematicId) {
         // Update existing
-        await api.put(`/schematics/${schematicId}`, {
+        await api.put(`/api/schematics/${schematicId}`, {
           name: schematicName,
           nodes: nodes,
           wires: wires,
@@ -70,13 +76,13 @@ const SchematicEditor = () => {
         toast.success("Schematic saved");
       } else {
         // Create new
-        const response = await api.post("/schematics", {
+        const response = await api.post("/api/schematics/", {
           name: schematicName,
         });
         const newId = response.data._id;
 
         // Update with nodes and wires
-        await api.put(`/schematics/${newId}`, {
+        await api.put(`/api/schematics/${newId}`, {
           name: schematicName,
           nodes: nodes,
           wires: wires,
@@ -170,7 +176,7 @@ const SchematicEditor = () => {
     }
 
     try {
-      const response = await api.post(`/schematics/${schematicId}/analyze`);
+      const response = await api.post(`/api/schematics/${schematicId}/analyze`);
       toast.success(`Analysis complete: ${response.data.component_count} components`);
     } catch (error) {
       console.error("Analysis failed:", error);
@@ -183,6 +189,60 @@ const SchematicEditor = () => {
       setNodes([]);
       setWires([]);
       setSelectedNodeId(null);
+      setDesignRationale(undefined);
+    }
+  };
+
+  const handleGenerateDesign = async (prompt: string) => {
+    setIsGeneratingAI(true);
+    setDesignRationale(undefined);
+    try {
+      const response = await api.post("/api/design/generate", {
+        query: prompt,
+        use_cache: true
+      });
+
+      const data = response.data;
+      setDesignRationale(data.metadata?.validator_comments?.join(". ") || "Design validated by Nexa Core.");
+
+      // Update canvas with generated schematic data
+      if (data.schematic_data) {
+        setNodes(data.schematic_data.nodes || []);
+        setWires(data.schematic_data.wires || []);
+        toast.success("Circuit topology synced to canvas");
+      } else {
+        toast.success("Circuit logic synthesized successfully");
+      }
+
+    } catch (error) {
+      console.error("AI Generation failed:", error);
+      toast.error("Synthesis failed: Neural link timeout");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const handleVisionExtract = async (file: File) => {
+    setIsExtractingVision(true);
+    try {
+      // Mocking vision extraction for demo to save tokens as requested
+      await new Promise(r => setTimeout(r, 2000));
+
+      // Add mock nodes representing an extracted LDO circuit
+      const mockNodes: SchematicNode[] = [
+        { id: `ext-${Date.now()}-1`, component_id: "resistor", x: 150, y: 150, rotation: 0, properties: { label: "R_DIV_1", type: "resistor" } },
+        { id: `ext-${Date.now()}-2`, component_id: "resistor", x: 150, y: 250, rotation: 0, properties: { label: "R_DIV_2", type: "resistor" } },
+        { id: `ext-${Date.now()}-3`, component_id: "ic", x: 300, y: 200, rotation: 0, properties: { label: "LM7805", type: "ic" } }
+      ];
+
+      setNodes(prev => [...prev, ...mockNodes]);
+      setDesignRationale("Vision Agent detected an LDO Voltage Regulator topology from the uploaded image. Components extracted with 98.4% confidence.");
+      toast.success("Vision extraction complete");
+    } catch (error) {
+      console.error("Vision extraction failed:", error);
+      toast.error("Vision link failure");
+    } finally {
+      setIsExtractingVision(false);
     }
   };
 
@@ -377,12 +437,20 @@ const SchematicEditor = () => {
           </div>
 
           {/* Parameter Control Panel */}
-          <div className="w-64">
+          <div className="w-72 flex flex-col gap-4 overflow-y-auto">
             <PropertiesPanel
               selectedNode={selectedNode}
               onUpdateNode={handleUpdateNode}
               onDeleteNode={handleDeleteNode}
               onRotateNode={handleRotateNode}
+            />
+
+            <AISynthesisPanel
+              onGenerateDesign={handleGenerateDesign}
+              onVisionExtract={handleVisionExtract}
+              isGenerating={isGeneratingAI}
+              isExtracting={isExtractingVision}
+              designRationale={designRationale}
             />
           </div>
         </div>

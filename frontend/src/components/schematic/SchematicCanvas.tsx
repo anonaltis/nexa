@@ -71,8 +71,16 @@ const getComponentSymbol = (type: string): JSX.Element => {
     case "mcu":
       return (
         <g className={baseStyle}>
-          <rect x="0" y="-20" width="60" height="40" rx="2" />
-          <text x="30" y="4" textAnchor="middle" fontSize="8" className="fill-current">MCU</text>
+          <rect x="0" y="-30" width="80" height="70" rx="4" />
+          <text x="40" y="5" textAnchor="middle" fontSize="10" className="fill-current font-bold">ESP32</text>
+          {/* Mock pin markers */}
+          <line x1="0" y1="-20" x2="-5" y2="-20" />
+          <line x1="0" y1="-10" x2="-5" y2="-10" />
+          <line x1="80" y1="-20" x2="85" y2="-20" />
+          <line x1="80" y1="-10" x2="85" y2="-10" />
+          <line x1="80" y1="0" x2="85" y2="0" />
+          <line x1="80" y1="10" x2="85" y2="10" />
+          <line x1="80" y1="20" x2="85" y2="20" />
         </g>
       );
     case "opamp":
@@ -112,6 +120,39 @@ const getComponentSymbol = (type: string): JSX.Element => {
           </text>
         </g>
       );
+  }
+};
+
+const getPinOffset = (type: string, pin: string): { x: number; y: number } => {
+  switch (type) {
+    case "resistor":
+    case "capacitor":
+    case "led":
+      // Pin 1 on left (0,0), Pin 2/Anode on right (34,0)
+      if (pin === "1" || pin === "anode" || pin === "Anode") return { x: 0, y: 0 };
+      if (pin === "2" || pin === "cathode" || pin === "Cathode" || pin === "R" || pin === "G" || pin === "B") return { x: 34, y: 0 };
+      return { x: 0, y: 0 };
+    case "mcu":
+      // Simple offset logic based on pin name for ESP32-like behavior
+      if (pin === "3.3V" || pin === "VCC") return { x: 0, y: -20 };
+      if (pin === "GND") return { x: 0, y: 20 };
+      if (pin === "5V") return { x: 0, y: -10 };
+      if (pin.includes("SDA") || pin.includes("GPIO21")) return { x: 80, y: -20 };
+      if (pin.includes("SCL") || pin.includes("GPIO22")) return { x: 80, y: -10 };
+      if (pin.includes("DATA") || pin.includes("GPIO4")) return { x: 80, y: 0 };
+      if (pin.includes("GPIO")) return { x: 80, y: 10 };
+      return { x: 40, y: 0 };
+    case "ground":
+      return { x: 0, y: -10 };
+    case "power":
+      return { x: 0, y: 10 };
+    case "display":
+    case "sensor":
+      if (pin === "VCC") return { x: 0, y: -10 };
+      if (pin === "GND") return { x: 0, y: 10 };
+      return { x: 30, y: 0 };
+    default:
+      return { x: 0, y: 0 };
   }
 };
 
@@ -190,8 +231,13 @@ const SchematicCanvas = ({
     } else if (tool === "wire") {
       const node = nodes.find((n) => n.id === nodeId);
       if (node) {
+        const pin = !wireStart ? "out" : "in"; // Mock pin names for manual
+        const offset = getPinOffset(node.properties.type, pin);
+        const pinX = node.x + offset.x;
+        const pinY = node.y + offset.y;
+
         if (!wireStart) {
-          setWireStart({ nodeId, x: node.x, y: node.y });
+          setWireStart({ nodeId, x: pinX, y: pinY });
         } else if (wireStart.nodeId !== nodeId) {
           // Complete wire
           const newWire: SchematicWire = {
@@ -202,7 +248,7 @@ const SchematicCanvas = ({
             to_pin: "in",
             points: [
               { x: wireStart.x, y: wireStart.y },
-              { x: node.x, y: node.y },
+              { x: pinX, y: pinY },
             ],
           };
           onAddWire(newWire);
@@ -313,15 +359,38 @@ const SchematicCanvas = ({
         <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
           {/* Wires */}
           {wires.map((wire) => {
-            const points = wire.points.map((p) => `${p.x},${p.y}`).join(" ");
+            let points = "";
+            if (wire.points && wire.points.length > 0) {
+              points = wire.points.map((p) => `${p.x},${p.y}`).join(" ");
+            } else {
+              // Fallback: calculate points from node positions and pin offsets
+              const fromNode = nodes.find(n => n.id === wire.from_node);
+              const toNode = nodes.find(n => n.id === wire.to_node);
+              if (fromNode && toNode) {
+                const startOff = getPinOffset(fromNode.properties.type, wire.from_pin);
+                const endOff = getPinOffset(toNode.properties.type, wire.to_pin);
+                const startX = fromNode.x + startOff.x;
+                const startY = fromNode.y + startOff.y;
+                const endX = toNode.x + endOff.x;
+                const endY = toNode.y + endOff.y;
+
+                // Add a simple 90 degree bend
+                const midX = (startX + endX) / 2;
+                points = `${startX},${startY} ${midX},${startY} ${midX},${endY} ${endX},${endY}`;
+              }
+            }
+
+            if (!points) return null;
+
             return (
               <polyline
                 key={wire.id}
                 points={points}
                 fill="none"
-                stroke="#3b82f6"
+                stroke="#60a5fa" /* Brighter blue for visibility */
                 strokeWidth={2 / zoom}
-                className="hover:stroke-primary"
+                strokeLinejoin="round"
+                className="hover:stroke-primary transition-colors duration-200"
               />
             );
           })}
@@ -344,9 +413,8 @@ const SchematicCanvas = ({
             <g
               key={node.id}
               transform={`translate(${node.x}, ${node.y}) rotate(${node.rotation})`}
-              className={`cursor-pointer transition-colors ${
-                selectedNodeId === node.id ? "text-primary" : "text-foreground"
-              }`}
+              className={`cursor-pointer transition-colors ${selectedNodeId === node.id ? "text-primary" : "text-foreground"
+                }`}
               onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
             >
               {/* Selection highlight */}

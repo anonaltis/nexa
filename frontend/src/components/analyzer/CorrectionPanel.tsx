@@ -24,7 +24,7 @@ const CorrectionPanel = ({ corrections, expectedOutputs, isVisible }: Correction
 
   return (
     <section className="w-full animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1">
         {/* Suggested Fixes */}
         <div className="floating-card p-6">
           <div className="flex items-center gap-3 mb-5">

@@ -31,7 +31,8 @@ GENAI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 client = None
 if GENAI_API_KEY and GENAI_API_KEY != "MOCK":
     try:
-        client = genai.Client(api_key=GENAI_API_KEY)
+        # Explicitly pass the key and use v1 to avoid v1beta issues
+        client = genai.Client(api_key=GENAI_API_KEY, http_options={'api_version': 'v1'})
     except Exception as e:
         print(f"Failed to initialize Gemini client: {e}")
 
@@ -92,7 +93,7 @@ async def chat_message(request: ChatMessageRequest):
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite-preview-02-05', 
+            model='gemini-1.5-flash', 
             contents=[system_prompt, request.content]
         )
         
@@ -163,7 +164,7 @@ async def analyze_circuit_text(request: AnalyzeTextRequest):
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite-preview-02-05', 
+            model='gemini-1.5-flash', 
             contents=prompt,
             config={'response_mime_type': 'application/json'}
         )
@@ -187,7 +188,7 @@ async def generate_code(request: GenerateCodeRequest):
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite-preview-02-05', 
+            model='gemini-1.5-flash', 
             contents=prompt
         )
         return {"code": response.text}
@@ -203,7 +204,7 @@ async def ask_gemini(request: AskGeminiRequest):
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite-preview-02-05', 
+            model='gemini-1.5-flash', 
             contents=prompt
         )
         return {"ai_response": response.text}

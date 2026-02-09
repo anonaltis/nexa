@@ -44,6 +44,11 @@ const Components = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // AI Recommendation State
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [recommendationReasoning, setRecommendationReasoning] = useState<string | null>(null);
+
   const fetchComponents = async () => {
     setIsLoading(true);
     try {
@@ -105,6 +110,30 @@ const Components = () => {
   const handleSelectComponent = (component: ComponentData) => {
     navigator.clipboard.writeText(component.name);
     toast.success(`COPIED_${component.name.toUpperCase()}_TO_BUFFER`);
+  };
+
+  const handleAIRecommend = async () => {
+    if (!aiPrompt.trim() || isRecommending) return;
+
+    setIsRecommending(true);
+    setRecommendationReasoning(null);
+    try {
+      // Calls the chat-v3 orchestrator which knows how to handle component requests
+      const response = await api.post("/api/v3/chat/message", {
+        message: `Recommend a component for: ${aiPrompt}`,
+        context: "components",
+        use_reasoning: true
+      });
+
+      const data = response.data;
+      setRecommendationReasoning(data.content || data.response);
+      toast.success("AI_RECOMMENDATION_SYNCED");
+    } catch (error) {
+      console.error("Recommendation failed:", error);
+      toast.error("NEURAL_LINK_FAILURE");
+    } finally {
+      setIsRecommending(false);
+    }
   };
 
   if (!user) {
@@ -172,6 +201,42 @@ const Components = () => {
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
               />
+            </div>
+
+            <div className="blueprint-card p-6 border-primary/20 bg-primary/5 space-y-6">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                AI_Smart_Recommender
+              </h4>
+              <div className="space-y-4">
+                <div className="relative">
+                  <textarea
+                    placeholder="E.g. High precision op-amp for audio..."
+                    className="w-full h-24 bg-black/40 border border-primary/10 rounded p-3 text-[10px] font-bold uppercase tracking-widest focus:border-primary/40 focus:outline-none resize-none placeholder:opacity-20"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                  />
+                  <Button
+                    className="absolute bottom-2 right-2 h-7 px-3 bg-primary hover:bg-primary/90 text-[8px] font-black uppercase tracking-widest"
+                    onClick={handleAIRecommend}
+                    disabled={isRecommending || !aiPrompt.trim()}
+                  >
+                    {isRecommending ? "Processing..." : "Search"}
+                  </Button>
+                </div>
+
+                {recommendationReasoning && (
+                  <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-2 mb-2 text-primary">
+                      <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      <span className="text-[8px] font-black uppercase tracking-[0.2em]">Engineering_Logic</span>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground leading-relaxed font-bold uppercase tracking-tight">
+                      {recommendationReasoning}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="blueprint-card p-6 border-primary/20 bg-primary/5 space-y-6">

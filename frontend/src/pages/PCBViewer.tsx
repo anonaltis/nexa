@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useLocation } from "react-router-dom";
 import { useProjectContext } from "@/contexts/ProjectContext";
 import {
   Download,
@@ -131,6 +131,7 @@ const libraryComponents = [
 const PCBViewer = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const projectId = searchParams.get("project");
   const { getProject, updateProject, projects } = useProjectContext();
   const [zoom] = useState(100);
@@ -202,6 +203,17 @@ const PCBViewer = () => {
   };
 
   useEffect(() => {
+    // Priority 1: State from navigation (AI generated)
+    if (location.state?.pcb_data) {
+      const pcb = location.state.pcb_data;
+      if (pcb.components) setComponents(pcb.components);
+      if (pcb.traces) setTraces(pcb.traces);
+      if (pcb.vias) setVias(pcb.vias);
+      toast({ title: "Design Synced", description: "AI generated PCB layout loaded from memory." });
+      return;
+    }
+
+    // Priority 2: Project data from context
     if (projectId) {
       const project = getProject(projectId);
       if (project && project.pcbDiagram) {
@@ -219,7 +231,7 @@ const PCBViewer = () => {
       setTraces(defaultTraces);
       setVias(defaultVias);
     }
-  }, [projectId, getProject, setComponents, setTraces, setVias]);
+  }, [projectId, getProject, setComponents, setTraces, setVias, location.state]);
 
   const {
     pushState,

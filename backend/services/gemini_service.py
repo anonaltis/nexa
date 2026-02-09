@@ -241,8 +241,8 @@ class GeminiService:
 
     def __init__(self):
         self.client = None
-        self.model_name = "gemini-2.0-flash"  # More capable than flash-lite
-        self.fallback_model = "gemini-2.0-flash-lite"
+        self.model_name = "gemini-3-flash-preview"  # Upgraded to Gemini 3
+        self.fallback_model = "gemini-2.0-flash"
         self._init_client()
 
         # Rate limiting state

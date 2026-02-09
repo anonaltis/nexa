@@ -51,7 +51,7 @@ This document describes the AI system architecture for ElectroLab/DebugMate, inc
                                ▼
                     ┌─────────────────────┐
                     │   Google Gemini API │
-                    │   gemini-2.0-flash  │
+                    │   gemini-3-flash-preview │
                     └─────────────────────┘
 ```
 
@@ -102,10 +102,10 @@ _cache_ttl = 300  # 5 minutes
 ### Model Selection
 ```python
 # Primary: More capable, better for complex tasks
-model_name = "gemini-2.0-flash"
+model_name = "gemini-3-flash-preview"
 
 # Fallback: Faster, cheaper, for simpler tasks
-fallback_model = "gemini-2.0-flash-lite"
+fallback_model = "gemini-2.0-flash"
 ```
 
 ---

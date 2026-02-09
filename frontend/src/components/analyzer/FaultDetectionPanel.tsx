@@ -51,7 +51,7 @@ const FaultDetectionPanel = ({ faults, isVisible }: FaultDetectionPanelProps) =>
         </div>
 
         {/* Fault Cards */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1">
           {faults.map((fault, index) => {
             const config = severityConfig[fault.severity];
             const IconComponent = config.icon;

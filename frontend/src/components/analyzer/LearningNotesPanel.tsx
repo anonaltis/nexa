@@ -30,7 +30,7 @@ const LearningNotesPanel = ({ notes, isVisible }: LearningNotesPanelProps) => {
         </div>
 
         {/* Notes Grid */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1">
           {notes.map((note, index) => (
             <div
               key={note.id}
@@ -41,7 +41,7 @@ const LearningNotesPanel = ({ notes, isVisible }: LearningNotesPanelProps) => {
                 <Sparkles className="w-4 h-4 text-primary/50" />
                 <h3 className="font-medium text-foreground">{note.concept}</h3>
               </div>
-              
+
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {note.explanation}
               </p>

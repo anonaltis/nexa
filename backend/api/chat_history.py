@@ -24,6 +24,7 @@ async def create_session(
     session_data: ChatSessionCreate,
     current_user: str = Depends(get_current_user)
 ):
+    print(f"DEBUG: Creating session for user {current_user} with title: {session_data.title}")
     session = {
         "title": session_data.title or "New Chat",
         "project_id": session_data.project_id,
@@ -185,3 +186,29 @@ async def add_message(
     )
 
     return message
+
+# Delete a message from a session
+@router.delete("/sessions/{session_id}/messages/{message_id}")
+async def delete_message(
+    session_id: str,
+    message_id: str,
+    current_user: str = Depends(get_current_user)
+):
+    try:
+        result = await db.db["chat_sessions"].update_one(
+            {
+                "_id": ObjectId(session_id),
+                "user_id": current_user
+            },
+            {
+                "$pull": {"messages": {"id": message_id}},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+    except:
+        raise HTTPException(status_code=400, detail="Invalid request parameters")
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found or already deleted")
+
+    return {"message": "Message deleted successfully"}

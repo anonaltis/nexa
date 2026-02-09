@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectContext } from "@/contexts/ProjectContext";
 import { api } from "@/lib/api";
@@ -10,15 +10,16 @@ import CodeMirror from "@uiw/react-codemirror";
 import { cpp } from "@codemirror/lang-cpp";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import CodeGenerationDialog from "@/components/code/CodeGenerationDialog";
-import { Wand2 } from "lucide-react";
+import { Wand2, Loader2 } from "lucide-react";
 
 const CodeEditor = () => {
   const { user } = useAuth();
   const { projects, getProject } = useProjectContext();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const projectId = searchParams.get("project");
 
-  const [code, setCode] = useState(`// Firmware Studio v4.0
+  const [code, setCode] = useState(location.state?.code || `// Firmware Studio v4.0
 // Initializing System Parameters...
 
 #include <Arduino.h>
@@ -36,9 +37,33 @@ void loop() {
   delay(1000);
 }`);
 
+  useEffect(() => {
+    const transferId = searchParams.get("transfer");
+    if (transferId) {
+      const storedData = localStorage.getItem(`nexa_lab_data_${transferId}`);
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.code) {
+          setCode(data.code);
+          toast.success("Code synced from AI workspace");
+        }
+        // Cleanup
+        localStorage.removeItem(`nexa_lab_data_${transferId}`);
+      }
+    }
+  }, [searchParams]);
+
   const [isUploading, setIsUploading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<{
+    summary: string;
+    issues: string[];
+    suggestions: string[];
+    pin_map?: Record<string, string>;
+  } | null>(null);
   const [generatedLibraries, setGeneratedLibraries] = useState<{ name: string; version?: string }[]>([]);
   const [generatedWiring, setGeneratedWiring] = useState<{ component: string; pin: string; board_pin: string }[]>([]);
+  const [logicExplanation, setLogicExplanation] = useState<string | null>(null);
   const currentProject = projectId ? getProject(projectId) : null;
 
   // Handler for AI-generated code
@@ -55,9 +80,31 @@ void loop() {
     }
     setGeneratedLibraries(result.libraries || []);
     setGeneratedWiring(result.wiring || []);
+    setLogicExplanation(result.notes || null);
+    setAnalysisResults(null); // Clear previous analysis
     toast.success("AI_CODE_GENERATED_SUCCESSFULLY");
-    if (result.notes) {
-      toast.info(result.notes, { duration: 5000 });
+  };
+
+  const handleAnalyze = async () => {
+    if (!code.trim()) return;
+
+    setIsAnalyzing(true);
+    setAnalysisResults(null);
+    toast.info("AI_ENGINE_ANALYZING_FIRMWARE...");
+
+    try {
+      const response = await api.post("/code/analyze", {
+        code,
+        board: "esp32", // Default to esp32 for now
+        context: currentProject?.description
+      });
+      setAnalysisResults(response.data);
+      toast.success("FIRMWARE_ANALYSIS_COMPLETE");
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      toast.error("AI_ENGINE_ANALYSIS_FAULT");
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -106,6 +153,18 @@ void loop() {
           <div className="flex items-center gap-4 relative z-10">
             {/* AI Code Generation Button */}
             <CodeGenerationDialog onCodeGenerated={handleCodeGenerated} />
+            <Button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || !code.trim()}
+              variant="outline"
+              className="h-10 px-8 border-primary/30 hover:bg-primary/10 text-[10px] font-bold uppercase tracking-widest rounded-none"
+            >
+              {isAnalyzing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Analyze_Code"
+              )}
+            </Button>
             <Button
               onClick={handleUpload}
               disabled={isUploading}
@@ -189,39 +248,58 @@ void loop() {
               </div>
             </div>
 
-            <div className="blueprint-card p-6 border-primary/20 bg-primary/5 space-y-6 flex-1">
-              <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                BOM_Synchronization
-              </h4>
-              <div className="space-y-4">
-                {currentProject?.description ? (
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase leading-relaxed opacity-60">
-                    {currentProject.description}
-                  </p>
-                ) : (
-                  <div className="text-center py-6 opacity-40">
-                    <span className="text-[9px] font-bold uppercase tracking-widest">No_Project_Linked</span>
-                  </div>
-                )}
-              </div>
 
-              <div className="pt-6 border-t border-primary/10">
-                <h5 className="text-[8px] font-black uppercase tracking-[0.2em] mb-4 text-muted-foreground">IO_Hardware_Map</h5>
-                <div className="space-y-2">
-                  {[
-                    { pin: "D13", label: "INTERNAL_LED" },
-                    { pin: "A0", label: "VDD_SENSE" },
-                    { pin: "TX0", label: "SER_UART" }
-                  ].map(io => (
-                    <div key={io.pin} className="flex justify-between text-[9px] font-mono">
-                      <span className="text-primary font-bold">{io.pin}</span>
-                      <span className="text-muted-foreground/60">{io.label}</span>
+            {analysisResults && (
+              <div className="pt-6 border-t border-primary/10 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="flex items-center gap-2 mb-4">
+                  <Wand2 className="w-3 h-3 text-primary animate-pulse" />
+                  <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Analysis_Report</h2>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-3 bg-primary/5 border border-primary/10 rounded">
+                    <p className="text-[10px] text-primary/80 leading-relaxed italic">
+                      "{analysisResults.summary}"
+                    </p>
+                  </div>
+
+                  {analysisResults.issues.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[8px] font-bold text-red-400 uppercase tracking-widest px-1">Critical_Issues</span>
+                      {analysisResults.issues.map((issue, i) => (
+                        <div key={i} className="text-[9px] p-2 bg-red-500/5 border border-red-500/20 rounded text-red-200/70">
+                          {issue}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+
+                  {analysisResults.suggestions.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-[8px] font-bold text-blue-400 uppercase tracking-widest px-1">Optimizations</span>
+                      {analysisResults.suggestions.map((sug, i) => (
+                        <div key={i} className="text-[9px] p-2 bg-blue-500/5 border border-blue-500/20 rounded text-blue-200/70">
+                          {sug}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {logicExplanation && (
+              <div className="pt-6 border-t border-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  <h5 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">AI_Logic_Reasoning</h5>
+                </div>
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <p className="text-[10px] text-muted-foreground leading-relaxed font-bold uppercase tracking-tight">
+                    {logicExplanation}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -100,8 +101,35 @@ const TEST_SECTIONS: TestSection[] = [
 // ---------------------------------------------------------------------------
 
 const AITestLab = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [results, setResults] = useState<Record<string, TestResult>>({});
   const [runningAll, setRunningAll] = useState(false);
+
+  useEffect(() => {
+    const transferId = searchParams.get("transfer");
+    let inboundResults = location.state?.results;
+
+    if (transferId) {
+      const storedData = localStorage.getItem(`nexa_lab_data_${transferId}`);
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.results) inboundResults = data.results;
+        localStorage.removeItem(`nexa_lab_data_${transferId}`);
+      }
+    }
+
+    if (inboundResults) {
+      setResults({
+        "inbound-analysis": {
+          id: "inbound-analysis",
+          name: "INTEGRATED_SIGNAL_ANALYSIS",
+          status: "pass",
+          response: inboundResults,
+        }
+      });
+    }
+  }, [location.state, searchParams]);
 
   const runTest = async (test: TestConfig) => {
     setResults((prev) => ({
@@ -252,8 +280,8 @@ const AITestLab = () => {
                         <div className="flex items-center justify-between p-5 border-b border-primary/5 bg-primary/[0.02] group-hover:bg-primary/5 transition-colors">
                           <div className="flex items-center gap-6">
                             <div className={`h-3 w-3 ${result?.status === 'pass' ? 'bg-success' :
-                                result?.status === 'fail' ? 'bg-destructive' :
-                                  result?.status === 'running' ? 'bg-blue-400 animate-pulse' : 'bg-muted/10'
+                              result?.status === 'fail' ? 'bg-destructive' :
+                                result?.status === 'running' ? 'bg-blue-400 animate-pulse' : 'bg-muted/10'
                               }`} />
                             <div>
                               <div className="text-[12px] font-black uppercase tracking-wider group-hover:text-primary transition-colors">{test.name}</div>

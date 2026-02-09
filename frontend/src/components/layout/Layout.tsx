@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import Footer from "./Footer";
+import GlobalAssistant from "../chat/GlobalAssistant";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
@@ -30,6 +31,8 @@ const Layout = ({ children, hideFooter = false, fullWidth = false }: LayoutProps
           {children}
         </main>
       </div>
+
+      <GlobalAssistant />
 
       {!hideFooter && !user && <Footer />}
     </div>

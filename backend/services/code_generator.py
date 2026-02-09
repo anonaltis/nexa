@@ -331,6 +331,65 @@ Generate complete, production-ready code for this project. Return ONLY the JSON 
         return mock
 
 
+async def analyze_code(
+    code: str,
+    board: str = "esp32",
+    context: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Analyze firmware code for errors, safety, and efficiency.
+    """
+    if not client:
+        return {
+            "summary": "Analysis unavailable in Mock Mode.",
+            "issues": ["Hardware simulation limited."],
+            "suggestions": ["Verify pin mappings manually."]
+        }
+
+    board_info = BOARD_TEMPLATES.get(board, BOARD_TEMPLATES["esp32"])
+    
+    prompt = f"""
+    Analyze the following firmware code for {board_info['name']}.
+    Context: {context or 'General firmware development'}
+    
+    Code:
+    ```cpp
+    {code}
+    ```
+    
+    Provide a structured analysis including:
+    1. A brief summary of what the code does.
+    2. Any potential bugs or safety issues (pin conflicts, blocking calls).
+    3. Performance or efficiency suggestions.
+    
+    Respond ONLY with a JSON object:
+    {{
+        "summary": "string",
+        "issues": ["issue 1", "issue 2"],
+        "suggestions": ["suggestion 1", "suggestion 2"],
+        "pin_map": {{ "GPIO_NUMBER": "FUNCTION" }}
+    }}
+    """
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+        response_text = response.text.strip()
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            response_text = "\n".join(lines[1:-1])
+        return json.loads(response_text)
+    except Exception as e:
+        print(f"Code analysis error: {e}")
+        return {
+            "summary": "Error during analysis",
+            "issues": [str(e)],
+            "suggestions": ["Try again or check API connection"]
+        }
+
+
 def get_board_templates() -> Dict[str, Any]:
     """Get available board templates with their configurations."""
     return BOARD_TEMPLATES

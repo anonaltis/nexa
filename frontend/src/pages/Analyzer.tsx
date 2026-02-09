@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import CircuitInputPanel from "@/components/analyzer/CircuitInputPanel";
 import CircuitHistoryPanel from "@/components/analyzer/CircuitHistoryPanel";
@@ -12,6 +12,7 @@ import TruthTable from "@/components/analysis/TruthTable";
 import PowerAnalysis from "@/components/analysis/PowerAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCircuitAnalysis } from "@/hooks/useCircuitAnalysis";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 // Circuit type configurations
 const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
@@ -72,7 +73,10 @@ const CIRCUIT_ANALYSIS_CONFIGS: Record<string, any> = {
 };
 
 const Analyzer = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [detectedCircuitType, setDetectedCircuitType] = useState<string>("opamp");
+  const hasAutoAnalyzed = useRef(false);
   const { history, addAnalysis, removeAnalysis, clearHistory } = useCircuitHistory();
   const {
     analyze,
@@ -122,6 +126,25 @@ const Analyzer = () => {
   const handleSelectHistory = (analysis: CircuitAnalysis) => {
     handleAnalyze(analysis.circuitInput);
   };
+
+  useEffect(() => {
+    const transferId = searchParams.get("transfer");
+    let initialDesc = location.state?.description;
+
+    if (transferId) {
+      const storedData = localStorage.getItem(`nexa_lab_data_${transferId}`);
+      if (storedData) {
+        const data = JSON.parse(storedData);
+        if (data.description) initialDesc = data.description;
+        localStorage.removeItem(`nexa_lab_data_${transferId}`);
+      }
+    }
+
+    if (initialDesc && !hasAutoAnalyzed.current) {
+      hasAutoAnalyzed.current = true;
+      handleAnalyze(initialDesc);
+    }
+  }, [location.state, searchParams]);
 
   const renderCircuitTypeAnalysis = () => {
     // Show loading state for simulation
@@ -253,7 +276,7 @@ const Analyzer = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Content (9/12) */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-9 space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2 px-1">
                 <span className="h-0.5 w-4 bg-primary/40" />
@@ -289,7 +312,7 @@ const Analyzer = () => {
           </div>
 
           {/* Sidebar (3/12) */}
-          <div className="lg:col-span-4 space-y-8">
+          <div className="lg:col-span-3 space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2 px-1">
                 <span className="h-0.5 w-3 bg-primary/40" />

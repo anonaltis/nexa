@@ -75,36 +75,25 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configure Gemini
-# Configure Gemini
 GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 client = None
 
-if GENAI_API_KEY == "MOCK":
-    print("Gemini API Key is MOCK. Using Mock Mode.")
-    client = None
-elif GENAI_API_KEY:
+# Prioritize GEMINI_API_KEY and use 'v1' API version for stability
+target_key = GENAI_API_KEY or GOOGLE_API_KEY
+
+if target_key and target_key != "MOCK":
     try:
-        client = genai.Client(api_key=GENAI_API_KEY)
+        client = genai.Client(api_key=target_key, http_options={'api_version': 'v1'})
     except Exception as e:
-        print(f"Failed to initialize Gemini client with GEMINI_API_KEY: {e}")
-elif GOOGLE_API_KEY:
-     try:
-        client = genai.Client(api_key=GOOGLE_API_KEY)
-     except Exception as e:
-        print(f"Failed to initialize Gemini client with GOOGLE_API_KEY: {e}")
+        print(f"Failed to initialize Gemini client: {e}")
+elif target_key == "MOCK":
+    print("Gemini API Key is MOCK. Using Mock Mode.")
 else:
     print("No API Key found. Using Mock Mode.")
 
 # --- Configuration ---
-MODEL_NAME = "gemini-2.5-flash-lite" 
-
-if GENAI_API_KEY:
-    try:
-        # Version specify karne se 404 ke chances kam ho jate hain
-        client = genai.Client(api_key=GENAI_API_KEY, http_options={'api_version': 'v1'})
-    except Exception as e:
-        print(f"Failed to initialize: {e}")
+MODEL_NAME = "gemini-1.5-flash"
 
 
 from db import db
@@ -154,6 +143,8 @@ async def chat_message(request: ChatMessageRequest, current_user: str = Depends(
 
         # Save assistant response to session
         if request.sessionId:
+            # Simulate artificial delay for thinking feel
+            await asyncio.sleep(2.5)
             await save_message_to_session(request.sessionId, current_user, response_data)
 
         return response_data

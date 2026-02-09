@@ -1,4 +1,5 @@
 #!/bin/bash
+export GOOGLE_API_KEY="" # Clear shell env to avoid SDK confusion with GEMINI_API_KEY
 
 # Configuration
 PROJECT_ROOT=$(pwd)
@@ -13,6 +14,11 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}🚀 Starting Nexa Platform (Relocated Backend)...${NC}"
+
+# Pre-startup cleanup to clear ports
+echo -e "${BLUE}🧹 Cleaning up ports 5000, 5173, 8000, 8080...${NC}"
+fuser -k 8000/tcp 5000/tcp 5173/tcp 8080/tcp 2>/dev/null || true
+sleep 1
 
 # Function to handle cleanup on exit
 cleanup() {

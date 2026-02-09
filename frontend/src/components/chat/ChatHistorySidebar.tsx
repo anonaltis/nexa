@@ -66,7 +66,7 @@ const ChatHistorySidebar = ({
 
   useEffect(() => {
     fetchSessions();
-  }, []);
+  }, [currentSessionId]);
 
   const handleDeleteSession = async () => {
     if (!sessionToDelete) return;
@@ -123,6 +123,18 @@ const ChatHistorySidebar = ({
       {/* Sessions List */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
+          {currentSessionId === null && (
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/20 text-primary border border-primary/30 animate-pulse">
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-bold truncate tracking-widest uppercase">
+                  ACTIVE_NEW_CHAT
+                </div>
+                <div className="text-[8px] text-muted-foreground uppercase">
+                  Awaiting first message...
+                </div>
+              </div>
+            </div>
+          )}
           {isLoading ? (
             <div className="p-4 text-center text-xs text-muted-foreground">
               Loading...
@@ -136,8 +148,8 @@ const ChatHistorySidebar = ({
               <div
                 key={session._id}
                 className={`group relative flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${currentSessionId === session._id
-                    ? "bg-primary/20 text-primary border border-primary/30"
-                    : "hover:bg-muted/50"
+                  ? "bg-primary/20 text-primary border border-primary/30"
+                  : "hover:bg-muted/50"
                   }`}
                 onClick={() => onSelectSession(session._id)}
               >
@@ -156,7 +168,7 @@ const ChatHistorySidebar = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-1 opacity-0 group-hover:opacity-100 transition-opacity text-[8px] font-bold uppercase"
+                      className="h-6 px-1 transition-opacity text-[8px] font-bold uppercase hover:text-red-500"
                       onClick={(e) => e.stopPropagation()}
                     >
                       OPTIONS

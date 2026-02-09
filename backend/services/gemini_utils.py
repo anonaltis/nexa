@@ -4,7 +4,6 @@ import logging
 import asyncio
 from functools import wraps
 from google.api_core import exceptions
-import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 

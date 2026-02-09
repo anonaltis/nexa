@@ -10,22 +10,22 @@ export interface Project {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
-  
+
   // Planning phase
   planningDoc?: PlanningDocument;
-  
+
   // PCB phase
   pcbDiagram?: PCBDiagram;
-  
+
   // Code phase (for ESP32/Arduino projects)
   codeFiles?: CodeFile[];
-  
+
   // Metadata
   tags: string[];
   category: ProjectCategory;
 }
 
-export type ProjectStatus = 
+export type ProjectStatus =
   | 'planning'
   | 'designing'
   | 'coding'
@@ -33,7 +33,7 @@ export type ProjectStatus =
   | 'testing'
   | 'completed';
 
-export type ProjectCategory = 
+export type ProjectCategory =
   | 'iot'
   | 'robotics'
   | 'audio'
@@ -121,6 +121,13 @@ export interface ChatMessage {
     type?: 'question' | 'poll' | 'documentation' | 'code' | 'diagram';
     pollOptions?: PollOption[];
     selectedOption?: string;
+    agent?: string;
+    validation_status?: string;
+    pcb_svg?: string;
+    bom?: any[];
+    schematic_data?: any;
+    isPlanComplete?: boolean;
+    plan?: any;
   };
 }
 

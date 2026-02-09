@@ -201,12 +201,20 @@ async def chat_message(
 
         # Save AI message
         ai_content = response.final_response or "I couldn't generate a response."
+        func_name = None
+        if response.function_call:
+            try:
+                func_name = response.function_call.get("name")
+            except AttributeError:
+                # Handle unexpected structure
+                func_name = getattr(response.function_call, 'name', None)
+
         await memory.add_message(
             session_id=request.session_id,
             role="assistant",
             content=ai_content,
             metadata={
-                "function_called": response.function_call.get("name") if response.function_call else None,
+                "function_called": func_name,
                 "confidence": response.confidence,
                 "verified": bool(verified_by)
             }

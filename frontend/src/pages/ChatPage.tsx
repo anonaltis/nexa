@@ -4,9 +4,22 @@ import ChatInterface from "@/components/chat/ChatInterface";
 import ChatHistorySidebar from "@/components/chat/ChatHistorySidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectContext } from "@/contexts/ProjectContext";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+import { Trash2, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const ChatPage = () => {
   const { user } = useAuth();
@@ -38,6 +51,19 @@ const ChatPage = () => {
 
   const handleSessionCreated = (sessionId: string) => {
     setCurrentSessionId(sessionId);
+  };
+
+  const handleDeleteCurrentSession = async () => {
+    if (!currentSessionId) return;
+
+    try {
+      await api.delete(`/chat/sessions/${currentSessionId}`);
+      toast({ title: "SESSION_PURGED", description: "NEURAL_REGISTRY_CLEARED" });
+      handleNewSession();
+    } catch (error) {
+      console.error("Failed to delete session:", error);
+      toast({ title: "PURGE_FAILURE", description: "UNABLE_TO_CLEAN_NEURAL_LINK", variant: "destructive" });
+    }
   };
 
   const handlePlanComplete = async (plan: any) => {
@@ -152,6 +178,40 @@ const ChatPage = () => {
               </span>
             </div>
             <div className="flex items-center gap-6">
+              {currentSessionId && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 text-[9px] font-black uppercase tracking-[0.2em] gap-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      PURGE_SESSION
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-neutral-900 border-primary/20">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-primary uppercase tracking-tighter flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        Confirm_Purge_Protocol
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-muted-foreground text-xs uppercase tracking-widest leading-relaxed">
+                        This will permanently erase all neural logs for session: {currentSessionId}. This action is irreversible once committed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="bg-transparent border-primary/20 text-xs font-bold uppercase tracking-widest text-muted-foreground rounded-none">Cancel_Abort</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteCurrentSession}
+                        className="bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-none shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+                      >
+                        Confirm_Erase
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <div className="flex items-center gap-2 border-l border-primary/10 pl-6 h-12">
                 <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">LINK_QUALITY</span>
                 <span className="text-[10px] font-mono font-bold text-success uppercase">EXCELLENT</span>

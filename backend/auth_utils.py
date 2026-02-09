@@ -39,11 +39,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    # Check if we are in DEMO_MODE to allow bypass for hackathon
+    is_demo = os.getenv("DEMO_MODE", "false").lower() == "true"
+    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            if is_demo:
+                return "demo@example.com"
             raise credentials_exception
+        return username
     except JWTError:
+        if is_demo:
+            print("👤 Auth failed in DEMO_MODE, falling back to demo user.")
+            return "demo@example.com"
         raise credentials_exception
-    return username

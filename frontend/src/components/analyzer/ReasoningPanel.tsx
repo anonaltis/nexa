@@ -27,13 +27,19 @@ const ReasoningPanel = ({ steps, isVisible }: ReasoningPanelProps) => {
     <section className="w-full animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
       <div className="space-y-2">
         {/* Section Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-            <Brain className="w-5 h-5 text-primary" />
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+              <Brain className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground uppercase tracking-tight">Logic Reasoning Path</h2>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Physics-Based Verification Engine</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">AI Reasoning</h2>
-            <p className="text-sm text-muted-foreground">Step-by-step analysis process</p>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/20">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">High_Reasoning_Active</span>
           </div>
         </div>
 

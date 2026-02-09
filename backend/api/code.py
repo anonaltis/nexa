@@ -96,7 +96,7 @@ async def get_templates(
 async def get_template_by_board(
     board: str,
     current_user: str = Depends(get_current_user)
-) -> Dict[str, Any]:
+):
     """
     Get template configuration for a specific board.
     """
@@ -106,3 +106,29 @@ async def get_template_by_board(
         raise HTTPException(status_code=404, detail=f"Board '{board}' not found")
 
     return templates[board]
+
+
+class CodeAnalysisRequest(BaseModel):
+    code: str
+    board: str = "esp32"
+    context: Optional[str] = None
+
+
+@router.post("/analyze")
+async def analyze_project_code(
+    request: CodeAnalysisRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Analyze firmware code for errors, safety, and efficiency.
+    """
+    try:
+        from services.code_generator import analyze_code
+        result = await analyze_code(
+            code=request.code,
+            board=request.board,
+            context=request.context
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Code analysis failed: {str(e)}")

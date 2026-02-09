@@ -43,8 +43,13 @@ api.interceptors.response.use(
 /**
  * Chat API
  */
-export const chatWithAI = async (content: string, projectId?: string) => {
-    const response = await api.post('/chat/message', { content, projectId });
+export const chatWithAI = async (content: string, projectId?: string, useReasoning: boolean = true, context: string = "general") => {
+    const response = await api.post('/chat/message', {
+        content,
+        projectId,
+        use_reasoning: useReasoning,
+        context: context
+    });
     return response.data;
 };
 
@@ -59,8 +64,11 @@ export const analyzeCircuit = async (circuitData: any) => {
 /**
  * Circuit Analysis API (Text-based)
  */
-export const analyzeCircuitText = async (text: string) => {
-    const response = await api.post('/analyze-text', { text });
+export const analyzeCircuitText = async (text: string, useReasoning: boolean = true) => {
+    const response = await api.post('/analyze-text', {
+        text,
+        use_reasoning: useReasoning
+    });
     return response.data;
 };
 
@@ -75,11 +83,12 @@ export const generateCode = async (text: string, board: string = "esp32") => {
 /**
  * Simulation Agent API
  */
-export const simulateCircuit = async (circuit_description: string, simulation_type: string = "auto") => {
+export const simulateCircuit = async (circuit_description: string, simulation_type: string = "auto", useReasoning: boolean = true) => {
     const response = await api.post('/api/simulation/run', {
         circuit_description,
         simulation_type,
-        use_cache: true
+        use_cache: true,
+        use_reasoning: useReasoning
     });
     return response.data;
 };

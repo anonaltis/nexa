@@ -151,11 +151,11 @@ class Component(ComponentBase):
 # Schematic Models
 class SchematicNode(BaseModel):
     id: str
-    component_id: str
+    component_id: Optional[str] = None
     x: float
     y: float
     rotation: float = 0
-    properties: dict = {}
+    properties: dict = Field(default_factory=dict)
 
 class SchematicWire(BaseModel):
     id: str
@@ -171,7 +171,8 @@ class SchematicBase(BaseModel):
     project_id: Optional[str] = None
 
 class SchematicCreate(SchematicBase):
-    pass
+    nodes: Optional[List[SchematicNode]] = []
+    wires: Optional[List[SchematicWire]] = []
 
 class SchematicUpdate(BaseModel):
     name: Optional[str] = None

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Send, Bot, User, Loader2, CheckCircle2, Cpu, Code, FileText, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Send, Bot, User, Loader2, CheckCircle2, Cpu, Code, FileText, Sparkles, Layout, Activity, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import type { ChatMessage, PollOption as PollOptionType } from "@/types/project";
 
 interface ChatInterfaceProps {
@@ -57,9 +59,22 @@ const ChatInterface = ({
   const [useReasoning, setUseReasoning] = useState(false);
   const [useDesignAgent, setUseDesignAgent] = useState(true); // Auto-route design requests
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingSchematic, setIsCreatingSchematic] = useState<string | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [planningPhase, setPlanningPhase] = useState<"none" | "questions" | "complete">("none");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const extractThinking = (content: string) => {
+    const match = content.match(/<thinking>([\s\S]*?)<\/thinking>/);
+    if (match) {
+      return {
+        thinking: match[1].trim(),
+        content: content.replace(/<thinking>[\s\S]*?<\/thinking>/, "").trim()
+      };
+    }
+    return { thinking: null, content };
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,26 +85,39 @@ const ChatInterface = ({
     const loadSession = async () => {
       if (!sessionId) {
         setMessages([WELCOME_MESSAGE]);
+        setPlanningPhase("none");
+        setIsLoadingSession(false);
         return;
       }
 
+      // Safeguard: If we already have messages and the sessionId matches, maybe skip?
+      // But for now, let's just ensure we handle the loading state safely.
       setIsLoadingSession(true);
       try {
+        console.log(`📡 Loading session: ${sessionId}`);
         const response = await api.get(`/chat/sessions/${sessionId}`);
         const sessionData = response.data;
 
-        if (sessionData.messages && sessionData.messages.length > 0) {
+        if (sessionData && sessionData.messages && Array.isArray(sessionData.messages)) {
+          console.log(`✅ Loaded ${sessionData.messages.length} messages`);
           setMessages(
             sessionData.messages.map((msg: any) => ({
               ...msg,
-              timestamp: new Date(msg.timestamp),
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             }))
           );
+
+          if (sessionData.messages.some((m: any) => m.metadata?.isPlanComplete)) {
+            setPlanningPhase("complete");
+          }
         } else {
+          console.log("ℹ️ Session empty or malformed, using welcome message");
           setMessages([WELCOME_MESSAGE]);
+          setPlanningPhase("none");
         }
       } catch (error) {
-        console.error("Failed to load session:", error);
+        console.error("❌ Failed to load session:", error);
+        toast.error("DATA_RETRIEVAL_FAILURE: LINK_TIMEOUT");
         setMessages([WELCOME_MESSAGE]);
       } finally {
         setIsLoadingSession(false);
@@ -105,14 +133,29 @@ const ChatInterface = ({
     try {
       const response = await api.post("/chat/sessions", {
         title: "New Chat",
+        project_id: projectId
       });
-      const newSessionId = response.data._id;
+      const newSessionId = response.data._id || response.data.id;
       onSessionCreated?.(newSessionId);
       return newSessionId;
     } catch (error) {
       console.error("Failed to create session:", error);
+      toast.error("SESSION_INIT_FAILURE: FAILED_TO_ESTABLISH_NEURAL_LINK");
       return null;
     }
+  };
+
+  const handleLabNavigation = (path: string, state: any, successMsg: string) => {
+    // 1. Save data to localStorage for multi-tab support
+    const transferId = Date.now().toString(36);
+    localStorage.setItem(`nexa_lab_data_${transferId}`, JSON.stringify(state));
+
+    // 2. Open in new tab
+    const url = window.location.origin + path + (path.includes('?') ? '&' : '?') + `transfer=${transferId}`;
+    window.open(url, '_blank');
+
+    // 3. Keep current tab context and show toast
+    toast.success(successMsg);
   };
 
   const generateUUID = () => {
@@ -147,6 +190,7 @@ const ChatInterface = ({
         console.log("🔧 Routing to Design Agent...");
         const response = await api.post("/api/design/generate", {
           query: userMessage.content,
+          session_id: currentSessionId,
           use_cache: true
         });
 
@@ -156,9 +200,10 @@ const ChatInterface = ({
           metadata: {
             ...response.data.metadata,
             agent: "design",
-            validation_status: response.data.metadata?.validation_status,
-            pcb_data: response.data.metadata?.pcb_data,
-            pcb_svg: response.data.metadata?.pcb_svg,
+            pcb_data: response.data.pcb_data,
+            pcb_svg: response.data.pcb_svg,
+            bom: response.data.bom,
+            schematic_data: response.data.schematic_data,
           },
           timestamp: Date.now(),
         };
@@ -210,6 +255,19 @@ const ChatInterface = ({
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!sessionId) return;
+
+    try {
+      await api.delete(`/chat/sessions/${sessionId}/messages/${messageId}`);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      toast.success("Message purged from database");
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+      toast.error("Failed to delete message");
+    }
+  };
+
   const handlePollSelect = async (messageId: string, optionId: string) => {
     setMessages((prev) =>
       prev.map((msg) => {
@@ -242,6 +300,31 @@ const ChatInterface = ({
     }
   };
 
+  const handleOpenBuilder = async (message: ChatMessage) => {
+    if (!message.metadata?.schematic_data) return;
+
+    setIsCreatingSchematic(message.id);
+    try {
+      const designName = messages.find(m => m.role === "user" && messages.indexOf(m) < messages.indexOf(message))?.content || "AI Generated Design";
+
+      const response = await api.post("/api/schematics/", {
+        name: designName.slice(0, 30),
+        nodes: message.metadata.schematic_data.nodes,
+        wires: message.metadata.schematic_data.wires,
+        project_id: projectId
+      });
+
+      const schematicId = response.data._id || response.data.id;
+      toast.success("Design synthesized! Initializing Schematic Builder...");
+      window.open(window.location.origin + `/schematic?id=${schematicId}`, '_blank');
+    } catch (error) {
+      console.error("Failed to create schematic:", error);
+      toast.error("Failed to sync design to builder");
+    } finally {
+      setIsCreatingSchematic(null);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -266,7 +349,7 @@ const ChatInterface = ({
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
+            className={`group flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
               }`}
           >
             {message.role === "assistant" && (
@@ -292,21 +375,166 @@ const ChatInterface = ({
                     </span>
                     {message.metadata?.validation_status && (
                       <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded ${message.metadata.validation_status === "PASS"
-                          ? "bg-green-500/20 text-green-400"
-                          : message.metadata.validation_status === "FAIL"
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-yellow-500/20 text-yellow-400"
+                        ? "bg-green-500/20 text-green-400"
+                        : message.metadata.validation_status === "FAIL"
+                          ? "bg-red-500/20 text-red-400"
+                          : "bg-yellow-500/20 text-yellow-400"
                         }`}>
                         {message.metadata.validation_status}
                       </span>
                     )}
                   </div>
                 )}
-                <div className="text-sm prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 prose-pre:p-2 prose-pre:rounded-lg prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground text-foreground">
+                <div className="text-sm prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-slate-950 prose-pre:text-slate-50 prose-pre:p-4 prose-pre:rounded-xl prose-pre:border prose-pre:border-primary/20 prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground text-foreground">
+                  {message.role === "assistant" && extractThinking(message.content).thinking && (
+                    <div className="mb-4 p-3 bg-amber-500/5 border-l-2 border-amber-500/30 rounded-r text-[10px] font-medium text-amber-200/60 italic leading-relaxed animate-in fade-in slide-in-from-left-2 duration-700">
+                      <div className="flex items-center gap-1.5 mb-1 opacity-60">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span className="uppercase tracking-[0.2em]">Internal_Logic_Processing</span>
+                      </div>
+                      {extractThinking(message.content).thinking}
+                    </div>
+                  )}
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {message.content}
+                    {message.role === "assistant" ? extractThinking(message.content).content : message.content}
                   </ReactMarkdown>
                 </div>
+
+                {/* View Schematic & PCB Buttons */}
+                {(message.metadata?.schematic_data || message.metadata?.pcb_svg || message.metadata?.bom) && (
+                  <div className="mt-4 pt-4 border-t border-primary/10 flex flex-wrap gap-2">
+                    {message.metadata?.schematic_data && (
+                      <Button
+                        onClick={() => handleOpenBuilder(message)}
+                        disabled={isCreatingSchematic === message.id}
+                        className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                      >
+                        {isCreatingSchematic === message.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Layout className="w-3 h-3" />
+                        )}
+                        Schematic Builder
+                      </Button>
+                    )}
+
+                    {message.metadata?.pcb_svg && (
+                      <Button
+                        onClick={() => {
+                          const win = window.open("", "_blank");
+                          if (win) {
+                            win.document.write(`
+                              <html>
+                                <head>
+                                  <title>PCB Preview - Nexa AI</title>
+                                  <style>
+                                    body { margin: 0; display: flex; items-center: center; justify-content: center; background: #0f172a; height: 100vh; overflow: hidden; }
+                                    svg { max-width: 90%; max-height: 90%; }
+                                  </style>
+                                </head>
+                                <body>${message.metadata.pcb_svg}</body>
+                              </html>
+                            `);
+                            win.document.close();
+                          }
+                        }}
+                        className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                      >
+                        <Cpu className="w-3 h-3" />
+                        View PCB Layout
+                      </Button>
+                    )}
+
+                    {message.metadata?.bom && (
+                      <Button
+                        onClick={() => {
+                          const win = window.open("", "_blank");
+                          if (win) {
+                            win.document.write(`
+                              <html>
+                                <head>
+                                  <title>BOM - Nexa AI</title>
+                                  <style>
+                                    body { font-family: sans-serif; padding: 40px; background: #0f172a; color: #f8fafc; }
+                                    table { border-collapse: collapse; width: 100%; border: 1px solid #334155; }
+                                    th, td { text-align: left; padding: 12px; border: 1px solid #334155; }
+                                    th { background: #1e293b; color: #38bdf8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+                                    h2 { color: #f8fafc; font-size: 18px; text-transform: uppercase; letter-spacing: 0.2em; border-bottom: 2px solid #38bdf8; padding-bottom: 10px; margin-bottom: 20px; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <h2>Bill of Materials</h2>
+                                  <table>
+                                    <thead>
+                                      <tr><th>Designator</th><th>Component</th><th>Package</th><th>Value</th></tr>
+                                    </thead>
+                                    <tbody>
+                                      ${message.metadata.bom.map((item: any) => `
+                                        <tr>
+                                          <td>${item.designator}</td>
+                                          <td>${item.name}</td>
+                                          <td>${item.package}</td>
+                                          <td>${item.value}</td>
+                                        </tr>
+                                      `).join("")}
+                                    </tbody>
+                                  </table>
+                                </body>
+                              </html>
+                            `);
+                            win.document.close();
+                          }
+                        }}
+                        className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 border border-yellow-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                      >
+                        <FileText className="w-3 h-3" />
+                        Export BOM
+                      </Button>
+                    )}
+
+                    {message.metadata?.firmware && (
+                      <Button
+                        onClick={() => handleLabNavigation("/code", { code: message.metadata?.firmware }, "Firmware synced to Code Studio")}
+                        className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                      >
+                        <Code className="w-3 h-3" />
+                        Open in Code Studio
+                      </Button>
+                    )}
+
+                    {message.metadata?.simulation_results && (
+                      <Button
+                        onClick={() => handleLabNavigation("/test-lab", { results: message.metadata?.simulation_results }, "Signal analysis synced to Test Lab")}
+                        className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                      >
+                        <Cpu className="w-3 h-3" />
+                        Analyze in Test Lab
+                      </Button>
+                    )}
+
+                    <Button
+                      onClick={() => {
+                        const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.content || "Analyze the circuit";
+                        handleLabNavigation("/analyzer", { description: lastUserMsg }, "Design synced to Logic Processor");
+                      }}
+                      className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                    >
+                      <Activity className="w-3 h-3" />
+                      Logic Processor Analysis
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.content || "Explain the circuit design and potential issues";
+                        handleLabNavigation("/troubleshoot", { question: lastUserMsg }, "Design context synced to Troubleshoot");
+                      }}
+                      className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-[9px] font-bold uppercase tracking-widest h-8 px-3 flex items-center gap-2"
+                    >
+                      <Bot className="w-3 h-3" />
+                      Troubleshoot Diagnostic
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Poll Options */}
@@ -346,11 +574,23 @@ const ChatInterface = ({
                   </div>
                 )}
 
-              <div className="text-[8px] font-bold uppercase text-muted-foreground mt-1 px-1">
-                {message.timestamp.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+              <div className="flex items-center justify-between mt-1 px-1">
+                <div className="text-[8px] font-bold uppercase text-muted-foreground">
+                  {message.timestamp.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+
+                {message.id !== "welcome" && (
+                  <button
+                    onClick={() => handleDeleteMessage(message.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500 text-muted-foreground"
+                    title="Delete message"
+                  >
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -363,13 +603,21 @@ const ChatInterface = ({
         ))}
 
         {isLoading && (
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <span className="text-[8px] font-bold text-primary">AI</span>
+          <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-amber-500 animate-pulse" />
             </div>
-            <div className="chat-bubble-ai py-2 px-4 rounded-2xl">
-              <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                Thinking...
+            <div className="chat-bubble-ai py-3 px-4 rounded-2xl border border-amber-500/10 bg-amber-500/[0.02]">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-amber-500/40 text-[9px] font-bold uppercase tracking-[0.2em]">
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  Analyzing_Context...
+                </div>
+                <div className="flex gap-1 pl-1">
+                  <div className="h-1 w-1 bg-amber-500/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <div className="h-1 w-1 bg-amber-500/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="h-1 w-1 bg-amber-500/40 rounded-full animate-bounce" />
+                </div>
               </div>
             </div>
           </div>
