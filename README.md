@@ -223,4 +223,4 @@ This project is licensed under the **MIT License**.
   <p><em>Engineering Intelligence for Everyone</em></p>
   <p>© 2026 Nexa Platform</p>
 </div>
-]]>
+
