@@ -1,4 +1,5 @@
-<![CDATA[<div align="center">
+
+<div align="center">
   <h1>⚡ NEXA</h1>
   <p><strong>AI-Powered Electronics Engineering Agent</strong></p>
   <p>
@@ -21,17 +22,6 @@ Electronics engineering students and hobbyists face a steep learning curve. Debu
 ## 💡 Our Solution
 
 **Nexa** is not just another chatbot. It's an **agentic AI platform** that combines the reasoning power of **Google Gemini 3** with a deterministic **Physics Validation Engine**. It doesn't just generate text—it **designs, simulates, validates, and explains** complex electronic circuits.
-
----
-
-## 🏆 Judging Criteria Alignment
-
-| Criteria                    | Score | How We Excel                                                                                                   |
-| :-------------------------- | :---: | :------------------------------------------------------------------------------------------------------------- |
-| **Technical Execution**     |  40%  | Multi-agent architecture with Gemini 3 function calling. Physics-backed validation engine. Automated Test Lab. |
-| **Innovation / Wow Factor** |  30%  | Vision Agent for schematic-to-code. AI-powered SPICE-level simulation. Self-correcting designs.                |
-| **Potential Impact**        |  20%  | Democratizes hardware for students. Reduces prototyping time from hours to seconds.                            |
-| **Presentation / Demo**     |  10%  | Interactive Test Lab UI. Clear documentation. Mermaid architecture diagrams.                                   |
 
 ---
 
@@ -223,4 +213,3 @@ This project is licensed under the **MIT License**.
   <p><em>Engineering Intelligence for Everyone</em></p>
   <p>© 2026 Nexa Platform</p>
 </div>
-
